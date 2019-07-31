@@ -11,31 +11,60 @@
 
 const uint8_t slaveAddress =  0x44;
 
+const uint8_t packetKind = 0xaa;
+
 const uint8_t rebootStarted = 255;
 const uint8_t rebootActivity = 254;
 const uint8_t slaveRebootStarted = 253;
 
+
+
 void receiveEvent(size_t len);
 void requestEvent(void);
 
+
+FromWidgetData fromWidgetData;
+ToWidgetData toWidgetData;
+
+SystemMode currentSystemMode = NOT_RECEIVED;
+unsigned long lastModeChange = 0;
+
+uint16_t lastPacketReceived = 0;
+
+uint16_t lastPacketSent = 0;
+
 volatile boolean receivedMsg = false;
 unsigned long lastMsg = 0;
+
+SystemMode systemMode;
 
 extern unsigned long timeSinceLastMessage() {
   return millis() - lastMsg;
 }
 
+void populateFromWidgetData() {
+  unsigned long now = millis();
+  fromWidgetData.packetNum = lastPacketSent++;
+  fromWidgetData. packetAck = lastPacketReceived;
+  fromWidgetData.secondsSinceBoot = now / 1000;
+  fromWidgetData.secondsSinceActivity = (now - lastLocalActivity) / 1000;
+  // fromWidgetData. localSoundFileRequest = 0;
+  // fromWidgetData. globalSoundFileRequest = 0;
+  // fromWidgetData. pointsActivated = 0;
+}
+void processToWidgetData() {
+  lastPacketReceived = toWidgetData.packetNum;
+  if (toWidgetData.packetAck != lastPacketSent)
+    logf("Last packet sent %d, last packet acknowledged %d\n", lastPacketSent, toWidgetData.packetAck);
+
+  //toWidgetData.secondsSinceBoot;
+  //toWidgetData.secondsSinceActivity;
+  if (systemMode != toWidgetData. systemMode)
+    lastModeChange = millis();
+  systemMode = toWidgetData. systemMode;
+}
+
 unsigned long lastActivityAt = 0;
-
-struct __attribute__ ((packed)) ActivityData {
-  uint16_t secondsSinceLastActivity;
-  uint16_t secondsSinceBoot;
-  uint8_t lastActivity = slaveRebootStarted;
-  uint8_t subActivity = 0;
-  uint8_t reboots = 0;
-};
-
-ActivityData activityData;
 
 void setupComm() {
 
@@ -45,8 +74,8 @@ void setupComm() {
   Wire.begin(I2C_SLAVE, slaveAddress, I2C_PINS_18_19, I2C_PULLUP_EXT, I2C_RATE_400);
   Wire.setDefaultTimeout(100); // 100 usecs timeout
 #else
-log("setting up i2c on non-Teensy");
- Wire.begin(slaveAddress);
+  log("setting up i2c on non-Teensy");
+  Wire.begin(slaveAddress);
 #endif
   logf("i2c Slave address: 0x%02x\n", slaveAddress);
   // init vars
@@ -62,12 +91,27 @@ unsigned long activityReports = 0;
 //
 void receiveEvent(size_t len)
 {
-  uint8_t kind = Wire.read();
-  if (kind == 42) {
-   
-   logf("Got unknown i2c message, kind %d, %d bytes\n",
-             kind, Wire.available());
+  if (len == 0) {
+    log("Received i2c msg of length 0");
+    return;
   }
+  uint8_t kind = Wire.read();
+  switch (kind) {
+    case packetKind:
+      memset(&toWidgetData, 0, sizeof(toWidgetData));
+
+      if (len - 1 != sizeof(toWidgetData)) {
+      logf("Received data, but %d bytes rather than the expected %d bytes\n",
+           len - 1, toWidgetData);
+      }
+      Wire.read((uint8_t*)&toWidgetData, len - 1); // copy Rx data to databuf
+      break;
+    default:
+
+
+        logf("Got unknown i2c message, kind %d, %d bytes\n",
+             kind, len - 1);
+      }
 }
 
 
@@ -81,12 +125,9 @@ uint16_t secondsBetween(unsigned long start, unsigned long end) {
 //
 void requestEvent(void)
 {
-  Serial.println("requestEvent...");
-  unsigned long now = millis();
-  activityData.secondsSinceLastActivity = secondsBetween(lastActivityAt, now);
-  activityData.secondsSinceBoot = secondsBetween(0, now);
-  uint8_t * p = (uint8_t *)&activityData;
-  Wire.write(p, sizeof(ActivityData));
+  populateFromWidgetData();
+  uint8_t * p = (uint8_t *)&fromWidgetData;
+  Wire.write(p, sizeof(FromWidgetData));
 }
 
 
