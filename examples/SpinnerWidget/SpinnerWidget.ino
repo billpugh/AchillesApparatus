@@ -9,6 +9,7 @@
 
 */
 
+#include <math.h>
 #include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
 #include "log.h"
@@ -28,36 +29,8 @@ const int MAX_BACKWARD_RPM = 128;
 
 const int Hz = 50;
 
-void setup() {
-  pwm.begin();
+double targetRPM = 0;
 
-  pwm.setPWMFreq(Hz);  // Analog servos run at ~60 Hz updates
-  pwm.setPWM(0, 0, SERVO_STILL);
-  Serial.begin(115200);
-  while (!Serial) delay(10);
-  Serial.println("8 channel Servo test!");
-
-
-  delay(10);
-
-  pinMode(FEEDBACK_PIN, INPUT);
-}
-
-
-/*
-   Set the RPM for a servo
-*/
-void setRPM(int servo, int RPM) {
-  int v;
-  //Serial.println(RPM);
-  RPM = constrain(RPM, -MAX_BACKWARD_RPM, MAX_FORWARD_RPM);
-  if (RPM == 0)
-    v = SERVO_STILL;
-  else if (RPM < 0)
-    v = map(RPM, -MAX_BACKWARD_RPM, -1, SERVOMIN, SERVOMIN_TOP + 1);
-  else v = map(RPM, 1, MAX_FORWARD_RPM, SERVOMAX_BOTTOM - 1, SERVOMAX);
-  pwm.setPWM(servo, 0, v);
-}
 
 
 // get position, measured as 0 - 1000
@@ -87,6 +60,66 @@ int getPosition() {
   }
 
 }
+
+
+int posDiff(int p1, int p2) {
+  int diff = abs(p1 - p2);
+  if (diff < 800) return diff;
+  return abs(diff - 1000);
+}
+
+void moveToPosition(int target) {
+  int p = getPosition();
+  if (posDiff(p, target) < 10) return;
+  setRPM(0,  20);
+
+  while (true) {
+    delay(50);
+    int nextP = getPosition();
+    if (nextP == p) continue;
+    p = nextP;
+    logf("at %3d, moving towards %3d\n", p, target);
+
+    if (posDiff(p, target) < 10) break;
+
+  }
+  setRPM(0,  0);
+
+}
+
+
+void setup() {
+  pwm.begin();
+
+  pwm.setPWMFreq(Hz);  // Analog servos run at ~60 Hz updates
+  pwm.setPWM(0, 0, SERVO_STILL);
+  Serial.begin(115200);
+  while (!Serial) delay(10);
+  Serial.println("8 channel Servo test!");
+
+
+  delay(10);
+
+  pinMode(FEEDBACK_PIN, INPUT);
+  moveToPosition(250);
+  setRPM(0, (int) targetRPM);
+}
+
+/*
+   Set the RPM for a servo
+*/
+void setRPM(int servo, int RPM) {
+  int v;
+  //Serial.println(RPM);
+  RPM = constrain(RPM, -MAX_BACKWARD_RPM, MAX_FORWARD_RPM);
+  if (RPM == 0)
+    v = SERVO_STILL;
+  else if (RPM < 0)
+    v = map(RPM, -MAX_BACKWARD_RPM, -1, SERVOMIN, SERVOMIN_TOP + 1);
+  else v = map(RPM, 1, MAX_FORWARD_RPM, SERVOMAX_BOTTOM - 1, SERVOMAX);
+  pwm.setPWM(servo, 0, v);
+}
+
 
 const int BUFFER_SIZE = 3;
 int16_t posBuffer[BUFFER_SIZE];
@@ -189,28 +222,27 @@ void measurePosition() {
 
 
 }
-unsigned long nextChange = 0;
-int targetRPM = 0;
+unsigned long lastUpdate = 0;
+
+const double twoPi = 6.2831853072;
 
 void loop() {
   measurePosition();
   unsigned long now = millis();
-  if (now < nextChange || !haveRPM) {
+  if (!haveRPM) {
     delay(1);
     return;
   }
-  logf("RPM: %3d %3d\n", targetRPM, lastRPM);
+  unsigned long deltaT = lastUpdate == 0 ? 0  : now - lastUpdate;
   haveRPM = false;
-  nextChange = now + 1000;
-  if (targetRPM >= 99)
-    targetRPM = -1;
-  else if (targetRPM <= -99)
-    targetRPM = 0;
-  else if (targetRPM >= 0)
-    targetRPM ++;
-  else
-    targetRPM--;
-  //logf("target rpm %d\n", targetRPM);
+  lastUpdate = now;
+  logf("RPM: %4d %4d %3d %d\n", deltaT, lastPos, lastRPM, (int)targetRPM );
+  double angle =  lastPos * twoPi / 1000;
+  double accel = sin(angle) * 49;
+  double deltaRPM = accel / twoPi * 60 * deltaT / 1000;
+  targetRPM += deltaRPM;
+  targetRPM = constrain(targetRPM, -100, 100);
+  logf("RPM update: %3d %d %3d\n", (int)( angle * 360 / twoPi), (int)accel, (int) targetRPM );
   setRPM(0,  targetRPM);
   delay(1);
 
