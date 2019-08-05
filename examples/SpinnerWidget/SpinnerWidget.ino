@@ -11,6 +11,7 @@
 
 #include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
+#include "log.h"
 
 // called this way, it uses the default address 0x40
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
@@ -38,14 +39,14 @@ void setup() {
 
 
   delay(10);
-  
+
   pinMode(FEEDBACK_PIN, INPUT);
 }
 
 
 /*
- * Set the RPM for a servo
- */
+   Set the RPM for a servo
+*/
 void setRPM(int servo, int RPM) {
   int v;
   //Serial.println(RPM);
@@ -62,133 +63,155 @@ void setRPM(int servo, int RPM) {
 // get position, measured as 0 - 1000
 
 int getPosition() {
-  while (digitalRead(FEEDBACK_PIN));
-  // control signal is now low
-  while (!digitalRead(12));
-  unsigned long startHigh = micros();
-  while (digitalRead(12));
-  unsigned long endHigh = micros();
-  int v = (endHigh - startHigh) * 1000 / 1099;
-  int v2 = map(v, 28, 963, 0, 1000);
-  if (false) {
-    Serial.println(v2);
-    Serial.print(millis());
-    Serial.print(" ");
+  while (1) {
+    while (digitalRead(FEEDBACK_PIN));
+    // control signal is now low
+    while (!digitalRead(FEEDBACK_PIN));
+    unsigned long startHigh = micros();
+    while (digitalRead(FEEDBACK_PIN));
+    unsigned long endHigh = micros();
+    while (!digitalRead(FEEDBACK_PIN));
+    unsigned long endCycle = micros();
+    unsigned long cycleLength = endCycle - startHigh;
+    if (cycleLength > 1000 && cycleLength < 1200) {
+      int v = (endHigh - startHigh) * 1000 / 1099;
+      int v2 = map(v, 28, 963, 0, 1000);
+      if (false) {
+        Serial.println(v2);
+        Serial.print(millis());
+        Serial.print(" ");
 
+      }
+      return constrain(v2, 0, 1000);
+    }
   }
-  return constrain(v2, 0, 1000);
+
 }
 
+const int BUFFER_SIZE = 3;
+int16_t posBuffer[BUFFER_SIZE];
+long timeBuffer[BUFFER_SIZE];
+unsigned long nextPositionMeasurement = 0;
 
-// Calculate RPM
-// Right now, it uses a fairly large delay between readings, in order to 
-// get reasonable accuracy. We probably want to redesign this up so that it is non-blocking
-// and allows us to do other things between measuing the position
-int32_t calculateRPM() {
-  int attempts = 0;
-  boolean found, forward;
-  int32_t pos1, pos2, pos3;
-  long time1, time2, time3;
-  uint16_t timeDelay = 50;
-  do {
-    found = true;
-    pos1 = getPosition();
-    time1 = micros();
-    delay(timeDelay);
-    pos2 = getPosition();
-    time2 = micros();
-    delay(timeDelay);
-    pos3 = getPosition();
-    time3 = micros();
-    delay(timeDelay);
-    if (false) {
-      Serial.print(pos1); Serial.print(" "); Serial.print(time1); Serial.print(" ");
-      Serial.print(pos2); Serial.print(" "); Serial.print(time2); Serial.print(" ");
-      Serial.print(pos3); Serial.print(" "); Serial.print(time3); Serial.print(" ");
-      Serial.println();
-    }
+int bufferPosition = 0;
 
-    bool forward;
-    if (time1 >= time2 || time2 >= time3) {
-      //Serial.println("time glitch");
-      found = false;
-    } else if (pos1 < pos2 && pos2 < pos3) {
-      //Serial.println("easy forward ");
-      forward = true;
-    } else  if (pos3 < pos2 && pos2 < pos1) {
-      //Serial.println("easy backwards ");
-      forward = false;
-    } else if (pos1 < pos2 && pos2 > 600 && pos3 < 400) {
-      forward = true;
-      pos3 += 1000;
-    } else if (pos2 < pos3 && pos1 > 600 && pos2 < 400) {
-      forward = true;
-      pos1 -= 1000;
-    } else if (pos3 < pos2 && pos2 > 600 && pos1 < 400) {
-      forward = false;
-      pos1 += 1000;
-    } else if (pos2 < pos1 && pos3 > 600 && pos2 < 400) {
-      forward = false;
-      pos3 -= 1000;
-    } else  if (attempts > 5 || abs(pos3 - pos1) <= 2) {
-      return 0;
-    } else {
-      Serial.print("retry: ");
-      Serial.print(pos1);
-      Serial.print(" ");
-      Serial.print(pos2);
-      Serial.print(" ");
-      Serial.println(pos3);
 
-      attempts++;
-      found = false;
-    }
+bool haveRPM = false;
+int16_t lastRPM = 0;
+bool havePos = false;
+int16_t lastPos = 0;
 
-  } while (!found);
+void gotPosition(int16_t pos) {
+  if (false)
+    logf("got pos: %d\n", pos);
+  havePos = true;
+  lastPos = pos;
 
-  int32_t speed12 = (pos2 - pos1) * 1000000 / (time2 - time1);
-  int32_t speed23 = (pos3 - pos2) * 1000000 / (time3 - time2);
-  int32_t speed13 = (pos3 - pos1) * 1000000 / (time3 - time1);
-
-  int32_t x = (pos3 - pos2) ;
-  int32_t y = (time3 - time2);
-  int32_t speed23a = x * 1000000 / y;
-  if (false) {
-    Serial.print("calc:: ");
-    Serial.print(millis());
-    Serial.print(" ");
-    Serial.print(pos2);
-    Serial.print(" ");
-    Serial.print(speed12);
-    Serial.print(" ");
-    Serial.print(speed23);
-    Serial.print(" ");
-    Serial.print(speed13);
-    Serial.println();
-  }
-  return -60 * speed13 / 1000;
 }
+
+void gotRPM(int16_t pos, int16_t rpm) {
+  haveRPM = true;
+  lastRPM = rpm;
+  //logf("got RPM: %4d %4d\n", pos, rpm);
+}
+
+void measurePosition() {
+  unsigned long nowMS = millis();
+  if (nowMS < nextPositionMeasurement) return;
+  nextPositionMeasurement = nowMS + 50;
+
+  int16_t pos = getPosition();
+  gotPosition(pos);
+
+  int i3 =  (bufferPosition) % BUFFER_SIZE;
+  posBuffer[i3] = pos;
+  timeBuffer[i3] = micros();
+
+  if (bufferPosition < 3) {
+    logf("just starting: %d\n", bufferPosition);
+    bufferPosition++;
+    return;
+  }
+  int i1 = (bufferPosition - 2) % BUFFER_SIZE;
+  int i2 =  (bufferPosition - 1) % BUFFER_SIZE;
+
+  bufferPosition++;
+
+  int16_t pos1 = posBuffer[i1];
+  int16_t pos2 = posBuffer[i2];
+  int16_t pos3 = posBuffer[i3];
+
+  long time1 = timeBuffer[i1];
+  long time2 = timeBuffer[i2];
+  long time3 = timeBuffer[i3];
+
+  if (false)
+    logf("checking: %4d %4d %4d  %d %d %d\n", pos1, pos2, pos3, time1, time2, time3);
+
+
+  if (time1 >= time2 || time2 >= time3) {
+    //Serial.println("time glitch ");
+    return;
+  } else if (pos1 <= pos2 && pos2 <= pos3) {
+    //Serial.println("easy forward ");
+
+  } else  if (pos3 <= pos2 && pos2 <= pos1) {
+    //Serial.println("easy backwards ");
+
+  } else if (pos1 < pos2 && pos2 > 600 && pos3 < 400) {
+    pos3 += 1000;
+  } else if (pos2 < pos3 && pos1 > 600 && pos2 < 400) {
+    pos1 -= 1000;
+  } else if (pos3 < pos2 && pos2 > 600 && pos1 < 400) {
+    pos1 += 1000;
+  } else if (pos2 < pos1 && pos3 > 600 && pos2 < 400) {
+    pos3 -= 1000;
+  } else  if (abs(pos3 - pos1) <= 2
+              || abs(pos3 - pos2) <= 2 && abs(pos2 - pos1) > 600
+              ||  abs(pos1 - pos2) <= 2 && abs(pos2 - pos3) > 600) {
+    gotRPM(pos3, 0);
+    return;
+  } else {
+    logf("RPM calculation fail: %d %d %d  %d %d %d\n", pos1, pos2, pos3, time1, time2, time3);
+    return;
+  }
+  if (false)
+    logf("calculate: %4d %4d %4d  %d %d\n", pos1, pos2, pos3, time2 - time1, time3 - time2);
+
+  int32_t speed13 = (pos3 - pos1) * 1000000L / (time3 - time1);
+
+  if (false) {
+    int32_t speed12 = (pos2 - pos1) * 1000000L / (time2 - time1);
+    int32_t speed23 = (pos3 - pos2) * 1000000L / (time3 - time2);
+    logf("calc:: %d  %d  %d %d %d\n", millis(), pos3, speed12, speed23, speed13);
+  }
+  gotRPM(pos3,  -60 * speed13 / 1000 );
+
+
+}
+unsigned long nextChange = 0;
+int targetRPM = 0;
 
 void loop() {
-  for (int rpm = 1; rpm < 100; rpm++) {
-    setRPM(0,  rpm);
-    delay(50);
-    Serial.print(rpm);
-    Serial.print(" ");
-    Serial.println(calculateRPM());
-
+  measurePosition();
+  unsigned long now = millis();
+  if (now < nextChange || !haveRPM) {
+    delay(1);
+    return;
   }
-  setRPM(0,  0);
-  delay(1000);
-  for (int rpm = -1; rpm > -100; rpm--) {
-    setRPM(0,  rpm);
-    delay(50);
-    Serial.print(rpm);
-    Serial.print(" ");
-    Serial.println(calculateRPM());
-
-  }
-  setRPM(0,  0);
-  delay(1000);
+  logf("RPM: %3d %3d\n", targetRPM, lastRPM);
+  haveRPM = false;
+  nextChange = now + 1000;
+  if (targetRPM >= 99)
+    targetRPM = -1;
+  else if (targetRPM <= -99)
+    targetRPM = 0;
+  else if (targetRPM >= 0)
+    targetRPM ++;
+  else
+    targetRPM--;
+  //logf("target rpm %d\n", targetRPM);
+  setRPM(0,  targetRPM);
+  delay(1);
 
 }
