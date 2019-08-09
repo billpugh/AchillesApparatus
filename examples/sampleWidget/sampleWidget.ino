@@ -1,13 +1,13 @@
 
 
 #include "log.h"
-#include "comm.h"
+#include "AchillesWedge.h"
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
   Serial.println("Sample Achilles Appartus widget");
-  setupComm();
+  setupComm(0x44);
 }
 
 void loop() {
