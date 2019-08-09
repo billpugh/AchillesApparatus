@@ -10,6 +10,9 @@ extern unsigned long lastLocalActivity;
 extern unsigned long lastGlobalActivity;
 
 extern volatile boolean receivedMsg;
-extern unsigned long lastMsg;
+extern unsigned long lastMsgReceivedAt;
 
+
+extern FromWidgetData fromWidgetData;
+extern ToWidgetData toWidgetData;
 #endif
