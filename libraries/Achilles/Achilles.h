@@ -17,7 +17,7 @@
 enum SoundChangeMode { SOUND_COMBINE, SOUND_REPLACE, SOUND_FADE};
 
 struct __attribute__ ((packed)) FromWidgetData {
-  uint16_t packetNum;
+  uint16_t packetNum = 0;
   uint16_t packetAck;
   uint16_t secondsSinceBoot;
   uint16_t secondsSinceActivity;
@@ -69,16 +69,16 @@ enum SystemMode { QUIET, ACTIVE, CHARGED, DISCHARGING, RESET,  CHEAT_CODE, NOT_R
 // EVENING_TWILIGHT: 7:38pm
 // NIGHT: 8:08pm
 
-enum Sunlight { NIGHT, MORNING_TWILIGHT, DAWN, DAY, DUSK, EVENING_TWILIGHT, UNKNOWN };
+enum Sunlight { NIGHT, MORNING_TWILIGHT, DAWN, DAY, DUSK, EVENING_TWILIGHT, UNKNOWN_SUNLIGHT };
 // light levels: Night: -4
 // Twilight: -2
 // Dusk/Dawn: -1
 // Daytime: 0
 
 struct __attribute__ ((packed)) ToWidgetData {
-  uint16_t packetNum;
+  uint16_t packetNum = 0;
   uint16_t packetAck;
-  uint16_t secondsSinceGlobalBoot;
+  uint16_t minutesSinceGlobalBoot;
   uint16_t secondsSinceGlobalActivity;
   SystemMode systemMode;
   Sunlight sunlight;
