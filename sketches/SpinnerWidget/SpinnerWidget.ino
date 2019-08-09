@@ -14,6 +14,10 @@
 #include <Adafruit_PWMServoDriver.h>
 #include "log.h"
 
+
+const double twoPi = 6.2831853072;
+
+
 // called this way, it uses the default address 0x40
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 
@@ -32,6 +36,7 @@ const int Hz = 50;
 double targetRPM = 0;
 
 
+double pendulumPosition = twoPi/2;
 
 // get position, measured as 0 - 1000
 
@@ -68,10 +73,17 @@ int posDiff(int p1, int p2) {
   return abs(diff - 1000);
 }
 
+int posDirection(int from, int to) {
+  if (to < from) to += 1000;
+  int diff = to - from;
+  if (diff < 500) return 1;
+  return -1;
+}
+
 void moveToPosition(int target) {
   int p = getPosition();
   if (posDiff(p, target) < 10) return;
-  setRPM(0,  20);
+  setRPM(0,  20 * posDirection(p, target));
 
   while (true) {
     delay(50);
@@ -83,8 +95,14 @@ void moveToPosition(int target) {
     if (posDiff(p, target) < 10) break;
 
   }
+  logf("At position %d\n", p);
   setRPM(0,  0);
 
+}
+
+
+void moveToPosition(double target) {
+  moveToPosition((int)target*1000/twoPi));
 }
 
 
@@ -101,22 +119,35 @@ void setup() {
   delay(10);
 
   pinMode(FEEDBACK_PIN, INPUT);
-  moveToPosition(250);
+  logf("Initial position %d\n", getPosition());
+  moveToPosition(500);
+  setRPM(0, 0);
+  delay(1000);
+  while (Serial.available() == 0)
+    delay(5);
+  moveToPosition(450);
   setRPM(0, (int) targetRPM);
+  pendulumPosition = twoPi/2;
 }
 
 /*
    Set the RPM for a servo
 */
+
+int lastSetRPM = 0;
 void setRPM(int servo, int RPM) {
   int v;
   //Serial.println(RPM);
+  lastSetRPM = RPM;
+
+  RPM = - RPM;
   RPM = constrain(RPM, -MAX_BACKWARD_RPM, MAX_FORWARD_RPM);
   if (RPM == 0)
     v = SERVO_STILL;
   else if (RPM < 0)
     v = map(RPM, -MAX_BACKWARD_RPM, -1, SERVOMIN, SERVOMIN_TOP + 1);
   else v = map(RPM, 1, MAX_FORWARD_RPM, SERVOMAX_BOTTOM - 1, SERVOMAX);
+
   pwm.setPWM(servo, 0, v);
 }
 
@@ -124,7 +155,6 @@ void setRPM(int servo, int RPM) {
 const int BUFFER_SIZE = 3;
 int16_t posBuffer[BUFFER_SIZE];
 long timeBuffer[BUFFER_SIZE];
-unsigned long nextPositionMeasurement = 0;
 
 int bufferPosition = 0;
 
@@ -148,13 +178,25 @@ void gotRPM(int16_t pos, int16_t rpm) {
   //logf("got RPM: %4d %4d\n", pos, rpm);
 }
 
+unsigned long nextPositionMeasurement = 0;
+
+unsigned long nextRPMMeasurement = 0;
+
 void measurePosition() {
   unsigned long nowMS = millis();
   if (nowMS < nextPositionMeasurement) return;
-  nextPositionMeasurement = nowMS + 50;
+  nextPositionMeasurement = nowMS + 5;
 
   int16_t pos = getPosition();
   gotPosition(pos);
+
+  if (nowMS < nextRPMMeasurement)
+    return;
+  int delay = 50;
+  if (lastSetRPM != 0)
+    delay = constrain(300 / abs(lastSetRPM), 5, 50);
+  nextRPMMeasurement = nowMS + delay;
+  //logf("rpm, delay: %d %d\n", lastSetRPM, delay);
 
   int i3 =  (bufferPosition) % BUFFER_SIZE;
   posBuffer[i3] = pos;
@@ -224,17 +266,16 @@ void measurePosition() {
 }
 unsigned long lastUpdate = 0;
 
-const double twoPi = 6.2831853072;
-
 void loop() {
   measurePosition();
   unsigned long now = millis();
-  if (!haveRPM) {
+  if (!havePos) {
     delay(1);
     return;
   }
   unsigned long deltaT = lastUpdate == 0 ? 0  : now - lastUpdate;
   haveRPM = false;
+  havePos = false;
   lastUpdate = now;
   logf("RPM: %4d %4d %3d %d\n", deltaT, lastPos, lastRPM, (int)targetRPM );
   double angle =  lastPos * twoPi / 1000;
