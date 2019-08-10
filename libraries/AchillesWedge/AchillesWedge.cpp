@@ -37,7 +37,7 @@ unsigned long timeSinceLastMessage() {
 void populateFromWidgetData() {
   unsigned long now = millis();
   fromWidgetData.packetNum++;
-  fromWidgetData. packetAck = toWidgetData.packetNum;
+  fromWidgetData.packetAck = toWidgetData.packetNum;
   fromWidgetData.secondsSinceBoot = now / 1000;
   fromWidgetData.secondsSinceActivity = (now - lastLocalActivity) / 1000;
   // fromWidgetData. localSoundFileRequest = 0;
