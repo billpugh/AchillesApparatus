@@ -12,7 +12,6 @@ RTC_DS3231 rtc;
 
 boolean rtcWorking = true;
 
-
 void checkWedges() {
   for (int i = 0; i < numWedges; i++) {
     WedgeData& w = wedges[i];
@@ -31,6 +30,11 @@ void checkWedges() {
 
 
 void initializeCentral() {
+  pointPixels.begin();
+
+  for (int i = 0; i < 8; i++)
+    pointPixels.setPixelColor(i, 0x00ff00);
+  pointPixels.show();
 
   if (! rtc.begin()) {
     Serial.println("Couldn't find RTC");
@@ -39,6 +43,9 @@ void initializeCentral() {
   DateTime now = rtc.now();
   logf("Time is %02d:%02d:%02d\n", now.hour(), now.minute(), now.second());
   checkWedges();
+  for (int i = 0; i < 8; i++)
+    pointPixels.setPixelColor(i, 0);
+  pointPixels.show();
 }
 
 
@@ -113,8 +120,8 @@ void scanWedges(SystemMode systemMode) {
     size_t sendSize = sizeof(ToWidgetData);
     centralData.packetAck = w.data.packetNum;
     logf("Writing package %d, last ack %d, size %d\n",
-    centralData.packetNum,  centralData.packetAck, sendSize);
-    
+         centralData.packetNum,  centralData.packetAck, sendSize);
+
     Wire.beginTransmission(w.address);
     int written = Wire.write((uint8_t *)&centralData, sendSize);
     int error = Wire.endTransmission();
@@ -144,4 +151,5 @@ void scanWedges(SystemMode systemMode) {
           pointPixels.setPixelColor(w.position * 8 + p, 0);
         }
   }
+  pointPixels.show();
 }
