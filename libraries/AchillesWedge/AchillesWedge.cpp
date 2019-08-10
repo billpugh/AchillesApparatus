@@ -36,8 +36,8 @@ unsigned long timeSinceLastMessage() {
 
 void populateFromWidgetData() {
   unsigned long now = millis();
-  fromWidgetData.packetNum = lastPacketSent++;
-  fromWidgetData. packetAck = lastPacketReceived;
+  fromWidgetData.packetNum++;
+  fromWidgetData. packetAck = toWidgetData.packetNum;
   fromWidgetData.secondsSinceBoot = now / 1000;
   fromWidgetData.secondsSinceActivity = (now - lastLocalActivity) / 1000;
   // fromWidgetData. localSoundFileRequest = 0;
@@ -46,7 +46,6 @@ void populateFromWidgetData() {
 }
 
 void processToWidgetData() {
-  lastPacketReceived = toWidgetData.packetNum;
   if (toWidgetData.packetAck != lastPacketSent)
     logf("Last packet sent %d, last packet acknowledged %d\n", lastPacketSent, toWidgetData.packetAck);
 
