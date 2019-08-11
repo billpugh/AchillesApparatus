@@ -4,9 +4,11 @@
 #include <Tsunami.h>
 Tsunami tsunami(Serial1);
 
-
+// A0 - innermost
+// A1 - middle
+// A2 - outer
+// A3 - tone arm
 const int OUTPUT_CHANNEL = 0;
-
 
 char gTsunamiVersion[VERSION_STRING_LEN];    // Tsunami version string
 
@@ -56,7 +58,7 @@ void tsunamiReset(Tsunami &t) {
 void setup() {
   Serial.begin(115200);
   while (!Serial) delay(10);
-  Serial.println("Tsunami demo");
+  Serial.println("PhotoSonic demo");
   logf("Compiled %s, %s\n", F(__DATE__), F(__TIME__));
 
   // Tsunami startup at 57600
@@ -80,13 +82,15 @@ void setup() {
     Serial.println("Didn't get version response");
 
   for (int t = 1; t <= 4; t++) {
+
     tsunami.trackLoop(t, true);
     tsunami.trackGain(t, -70);
 
     tsunami.trackPlayPoly(t, OUTPUT_CHANNEL, true);
   }
-
-
+  tsunami.trackGain(5, 0);
+  tsunami.trackGain(6, 0);
+  tsunami.trackLoop(6, true);
 }
 
 
@@ -109,6 +113,22 @@ int currentMaxValue;
 
 void directionChange();
 
+
+
+unsigned long startedHotspot = 0;
+unsigned long lastSawHotspot = 0;
+
+const int hotspotUntilWinddown = 1000;
+const int hotspotUntilShutdown = 2000;
+boolean hotspotWinddownStarted = false;
+boolean hotspotWinddown() {
+  return startedHotspot != 0 &&  millis() - lastSawHotspot > hotspotUntilWinddown;
+}
+
+boolean hotspotShutdown() {
+  return startedHotspot != 0 &&  millis() - lastSawHotspot > hotspotUntilShutdown;
+}
+
 int rpm;
 int direction;
 int prevDirection;
@@ -122,6 +142,7 @@ void measure() {
   int abs0 = abs(h0);
   int abs1 = abs(h1);
   int abs2 = abs(h2);
+  int abs3 = abs(h3);
 
   int hallSensor;
   int hallValue;
@@ -146,97 +167,133 @@ void measure() {
       rpm = 0;
       directionChange();
     }
-    return;
-  }
-  int hallSign = sign(hallValue);
-  int hallAbs = abs(hallValue);
-  if (hallSensor == 2)
-    hallSign = -hallSign;
 
-  if (currHallSensor == hallSensor && currHallSign == hallSign) {
-    // still on the last sensor we were on
-    if (wasZero) {
-      startCurrSensor = now;
-      if (currHallSensor == 2 && currHallSign == 1)
-        startThreePosSensor = now;
-    }
-    if (now > lastRPMUpdate + 2000 && direction != 0) {
-      log("Haven't seen any RPM updates\n");
-      direction = 0;
-      rpm = 0;
-      directionChange();
-    }
   } else {
+    int hallSign = sign(hallValue);
+    int hallAbs = abs(hallValue);
+    if (hallSensor == 2)
+      hallSign = -hallSign;
     const bool detail = true;
-    lastRPMUpdate = now;
-    if (currHallSensor == 2 && currHallSign == 1) {
-      int diff = now - startThreePosSensor;
-      if (diff > 0) {
-        logf("\n%3d %3d ", 0, 60000 / diff);
-        if (detail) log("\n");
+
+    if (abs3 > hallAbs / 3 + 2) {
+      if (detail && false) log("tone arm over hot spot\n");
+
+      if (startedHotspot == 0) {
+        if (detail) log("Starting hotspot\n");
+        startedHotspot =  now;
+        tsunami.trackPlayPoly(5, OUTPUT_CHANNEL, false);
+        tsunami.trackGain(6, -40);
+        tsunami.trackPlayPoly(6, OUTPUT_CHANNEL, false);
+        tsunami.trackFade(6, 250, -10, false);
+
+      } else if (hotspotWinddown()) {
+        tsunami.trackFade(6, 200, -10, false);
+        hotspotWinddownStarted = false;
+        if (detail) log("Restarting hotspot\n");
       }
-      startThreePosSensor = now;
+      lastSawHotspot = now;
     }
-    // new sensor
-    prevHallSensor = currHallSensor;
-    prevHallSign = currHallSign;
-    startPrevSensor = startCurrSensor;
-    currHallSensor = hallSensor;
-    currHallSign = hallSign;
-    startCurrSensor = now;
-    int diff = (startCurrSensor - startPrevSensor);
-    if (prevHallSensor != -1 && diff > 50) {
+    if (currHallSensor == hallSensor && currHallSign == hallSign) {
+      // still on the last sensor we were on
+      if (wasZero) {
+        startCurrSensor = now;
+        if (currHallSensor == 2 && currHallSign == 1)
+          startThreePosSensor = now;
+      }
+      if (now > lastRPMUpdate + 2000 && direction != 0) {
+        log("Haven't seen any RPM updates\n");
+        direction = 0;
+        rpm = 0;
+        directionChange();
+      }
+    } else {
 
-      if (detail) logf("moving from %d,%d -> %d,%d, %d ms\n",
-                         prevHallSensor, prevHallSign, currHallSensor, currHallSign, diff);
-      if (prevHallSensor != currHallSensor && currHallSign == prevHallSign) {
-        logf("Fuck: %d, %d -> %d, %d\n",
-             prevHallSensor, prevHallSign, currHallSensor, currHallSign);
-         logf("      %3d, %3d, %3d\n",   analogRead(A0) - 325, analogRead(A1) - 325, analogRead(A2) - 325);
-      } else {
-        // ms to perform one rotation = angle * diff
-        // RPM = 60000 / (ms to perform one rotation)
-        int sectorDiff = 10;
-        if (prevHallSensor != currHallSensor) {
-          direction = -(currHallSign - prevHallSign) / 2;
 
-          if (prevHallSensor + currHallSensor == 3)
-            sectorDiff = 54;
-          else
-            sectorDiff = 34;
+
+      lastRPMUpdate = now;
+      if (currHallSensor == 2 && currHallSign == 1) {
+        int diff = now - startThreePosSensor;
+        if (diff > 0) {
+          logf("\n%3d %3d ", 0, 60000 / diff);
+          if (detail) log("\n");
         }
-        else {
-          direction = (currHallSign - prevHallSign) / 2;
-          switch (currHallSensor) {
+        startThreePosSensor = now;
+      }
+      // new sensor
+      prevHallSensor = currHallSensor;
+      prevHallSign = currHallSign;
+      startPrevSensor = startCurrSensor;
+      currHallSensor = hallSensor;
+      currHallSign = hallSign;
+      startCurrSensor = now;
+      int diff = (startCurrSensor - startPrevSensor);
+      if (prevHallSensor != -1 && diff > 50) {
 
-            case 0:
-              sectorDiff = 17;
-              break;
-            case 1:
-              sectorDiff = 11;
-              break;
-            case 2:
-              sectorDiff = 6;
-              break;
+        if (detail) logf("moving from %d,%d -> %d,%d, %d ms\n",
+                           prevHallSensor, prevHallSign, currHallSensor, currHallSign, diff);
+        if (prevHallSensor != currHallSensor && currHallSign == prevHallSign) {
+          logf("Fuck: %d, %d -> %d, %d\n",
+               prevHallSensor, prevHallSign, currHallSensor, currHallSign);
+          logf("      %3d, %3d, %3d\n",   analogRead(A0) - 325, analogRead(A1) - 325, analogRead(A2) - 325);
+        } else {
+          // ms to perform one rotation = angle * diff
+          // RPM = 60000 / (ms to perform one rotation)
+          int sectorDiff = 10;
+          if (prevHallSensor != currHallSensor) {
+            direction = -(currHallSign - prevHallSign) / 2;
+
+            if (prevHallSensor + currHallSensor == 3)
+              sectorDiff = 54;
+            else
+              sectorDiff = 34;
           }
-        }
-        rpm = constrain(60000 * sectorDiff / 160 / diff, 0, 60);
-        if (rpm < 3) {
+          else {
+            direction = (currHallSign - prevHallSign) / 2;
+            switch (currHallSensor) {
 
-          logf("Moving too slowly\: %3d %4d\n", sectorDiff, diff );
-          direction = 0;
-          rpm = 0;
+              case 0:
+                sectorDiff = 17;
+                break;
+              case 1:
+                sectorDiff = 11;
+                break;
+              case 2:
+                sectorDiff = 6;
+                break;
+            }
+          }
+          rpm = constrain(60000 * sectorDiff / 160 / diff, 0, 60);
+          if (rpm < 3) {
+
+            logf("Moving too slowly\: %3d %4d\n", sectorDiff, diff );
+            direction = 0;
+            rpm = 0;
+          }
+          if (prevDirection != direction)
+            directionChange();
+          if (detail) logf("%3d ", (1 + currHallSensor)*currHallSign);
+          logf("%d %3d ", direction, rpm);
+          log("\n");
         }
-        if (prevDirection != direction)
-          directionChange();
-        if (detail) logf("%3d ", (1 + currHallSensor)*currHallSign);
-        logf("%d %3d ", direction, rpm);
-        log("\n");
       }
-    }
 
+    }
+    wasZero = false;
   }
-  wasZero = false;
+  if (hotspotShutdown()) {
+    log("hotspot shutdown\n");
+    startedHotspot = 0;
+    hotspotWinddownStarted = false;
+    tsunami.trackStop(5);
+    tsunami.trackStop(6);
+  } else if (hotspotWinddown()) {
+    if (!hotspotWinddownStarted) {
+      log("hotspot winddown\n");
+      tsunami.trackFade(6, -20, hotspotUntilShutdown - hotspotUntilWinddown + 20, false);
+      hotspotWinddownStarted = true;
+    }
+  } else
+    hotspotWinddownStarted = false;
 }
 PinkNoise pink(4);
 
