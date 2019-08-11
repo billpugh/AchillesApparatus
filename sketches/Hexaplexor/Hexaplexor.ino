@@ -17,6 +17,12 @@
 #define RESET_TIME         120
 #define SCRAMBLES            5
 
+#define RESET_SOUND          0
+#define GEAR_SOUND           1
+#define WIN_1_SOUND          2
+#define WIN_2_SOUND          3
+#define WIN_3_SOUND          4
+
 Servo servo[NUM_SERVOS];
 
 byte servoControl [] = {3, 4, 5, 6, 9, 10};
@@ -157,8 +163,11 @@ void triggerWheels(byte index) {
   wheelState[left] = (wheelState[left] + 1) % difficulty;
   wheelState[right] = (wheelState[right] + 1) % difficulty;
 
+  playSound(GEAR_SOUND, false);
+
   turnServo(left, wheelState[left] * 60);
   turnServo(right, wheelState[right] * 60);
+
 }
 
 bool checkPuzzleSolved() {
@@ -256,22 +265,27 @@ void loop() {
       resetPuzzle(false);
       lastInteraction = millis();
       resetFlag = false;
+      playSound(RESET_SOUND, false);
+      
     } else {
 
       if (checkPuzzleSolved()) {
         if (difficulty == 2) {
           difficulty = 3;
           fromWidgetData.pointsActivated = 1;
+          playSound(WIN_1_SOUND, true);
           resetPuzzle(true);
           
         } else if (difficulty == 3) {
           difficulty = 6;
           fromWidgetData.pointsActivated = 15;
+          playSound(WIN_2_SOUND, true);
           resetPuzzle(true);
           
         } else if (difficulty == 6) {
           difficulty = 2;
           fromWidgetData.pointsActivated = 255;
+          playSound(WIN_3_SOUND, true);
           resetPuzzle(true);
         }
       } else {
