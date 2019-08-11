@@ -5,7 +5,6 @@
 #include "AchillesWedge.h"
 
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(115200);
   while (!Serial && millis() < 3000)
     delay(1);
@@ -16,20 +15,36 @@ void setup() {
 }
 
 
+unsigned long lastCommComplaint = 0;
+unsigned long lastStatusReport = 0;
 int lastV = -1;
-unsigned long lastMessageReported = 0;
 void loop() {
-  if (receivedMsg && lastMessageReported != lastMsgReceivedAt) {
-    logf("Received message at %d\n", lastMsgReceivedAt);
-    lastMessageReported = lastMsgReceivedAt;
+  unsigned long now = millis();
+  if (!commOK() && now > 2000 &&  now - 2000 > lastCommComplaint) {
+    lastCommComplaint = now;
+    logf("Comm not working at %d\n", now);
   }
+  if (commOK() && now > 5000 &&  now - 5000 > lastStatusReport) {
+    lastStatusReport = now;
+    logf("System mode: %s\n", systemModeName(getSystemMode()));
+    logf("Daytime : %s\n", daytimeName(getDaytime()));
+    logf("Light level : %d\n", getLightLevel());
+  }
+
   int v = digitalRead(3);
-  if (v != lastV)
-    Serial.println(v);
-  fromWidgetData.pointsActivated = v;
-  lastV = v;
+
+  if (v != lastV) {
+    setPointTo(0,v);
+    localActivitySeen();
+    if (v) {
+      Serial.println("Turned on");
+      playSound(1, false);
+    } else
+      Serial.println("Turned off");
+    lastV = v;
+  }
 
   delay(300);
-  // put your main code here, to run repeatedly:
+
 
 }

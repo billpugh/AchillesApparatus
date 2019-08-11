@@ -13,47 +13,135 @@ typedef int  receive_arg_type;
 void receiveEvent(receive_arg_type len);
 void requestEvent(void);
 
-
 FromWidgetData fromWidgetData;
 ToWidgetData toWidgetData;
 
 SystemMode currentSystemMode = NOT_RECEIVED;
 unsigned long lastLocalActivity;
-unsigned long lastModeChange = 0;
 
+void localActivitySeen() {
+  lastLocalActivity = millis();
+}
+#ifdef ACHILLES_PACKET
 uint16_t lastPacketReceived = 0;
 
 uint16_t lastPacketSent = 0;
+#endif
 
 volatile boolean receivedMsg = false;
-unsigned long lastMsgReceivedAt = 0;
+unsigned long lastMsgReceivedAt = 1;
+unsigned long lastMsgReceivedSeen = 0;
 
-SystemMode systemMode;
 
-unsigned long timeSinceLastMessage() {
+volatile boolean sentMsg = false;
+unsigned long lastMsgSentAt = 1;
+unsigned long lastMsgSentSeen = 0;
+
+
+
+SystemMode getSystemMode() {
+  return toWidgetData.systemMode;
+}
+
+int getLightLevel() {
+  return toWidgetData.lightLevel;
+}
+Daytime getDaytime() {
+  return toWidgetData.daytime;
+}
+
+bool commOK() {
+  if (!sentMsg || !receivedMsg) return false;
+  unsigned long oneSecondAgo = millis() - 1000;
+  if (lastMsgReceivedAt < oneSecondAgo || lastMsgReceivedSeen < oneSecondAgo) return false;
+  return true;
+}
+
+void playSound(uint16_t track, bool global) {
+  fromWidgetData.playThisTrack = track;
+  fromWidgetData.playGlobal = global;
+}
+
+bool soundQueued() {
+  return fromWidgetData.playThisTrack != 0;
+}
+
+bool newMessageReceived() {
+  if (!receivedMsg) return false;
+  if (lastMsgReceivedSeen != lastMsgReceivedAt) {
+    lastMsgReceivedSeen = lastMsgReceivedAt;
+    return true;
+  }
+  return false;
+}
+
+bool newMessageSent() {
+  if (!sentMsg) return false;
+  if (lastMsgSentSeen != lastMsgSentAt) {
+    lastMsgSentSeen = lastMsgSentAt;
+    return true;
+  }
+  return false;
+}
+
+unsigned long millisSinceLastMessageReceived() {
   return millis() - lastMsgReceivedAt;
 }
 
+inline uint8_t pointToBit(int p) {
+  if (p < 0 || p > 7) {
+    logf("being asked access point %d\n", p);
+    return 0;
+  }
+  return 1 << p;
+}
+void setPoint(int p) {
+  fromWidgetData.pointsActivated |= pointToBit(p);
+}
+void setPointTo(int p, bool value) {
+  if (value)
+    setPoint(p);
+  else clearPoint(p);
+}
+void clearPoint(int p) {
+  fromWidgetData.pointsActivated &= ~pointToBit(p);
+}
+
+bool getPoint(int p) {
+  if (fromWidgetData.pointsActivated & pointToBit(p))
+    return true;
+  return false;
+}
+void clearAllPoints() {
+  fromWidgetData.pointsActivated = 0;
+}
+void setPointVector(uint8_t bitvector) {
+  fromWidgetData.pointsActivated  = bitvector;
+}
+
+
+// internal methods
+
+
 void populateFromWidgetData() {
   unsigned long now = millis();
+#ifdef ACHILLES_PACKET
   fromWidgetData.packetNum++;
   fromWidgetData.packetAck = toWidgetData.packetNum;
-  fromWidgetData.secondsSinceBoot = now / 1000;
-  fromWidgetData.secondsSinceActivity = (now - lastLocalActivity) / 1000;
-  // fromWidgetData. localSoundFileRequest = 0;
-  // fromWidgetData. globalSoundFileRequest = 0;
-  // fromWidgetData. pointsActivated = 0;
+#endif
+  fromWidgetData.secondsSinceBoot = constrain(now / 1000, 0, 0xffff);
+  fromWidgetData.secondsSinceActivity = constrain((now - lastLocalActivity) / 1000, 0, 0xffff);
 }
 
 void processToWidgetData() {
+
+#ifdef ACHILLES_PACKET
   if (toWidgetData.packetAck != lastPacketSent)
     logf("Last packet sent %d, last packet acknowledged %d\n", lastPacketSent, toWidgetData.packetAck);
-
+#endif
   //toWidgetData.secondsSinceBoot;
   //toWidgetData.secondsSinceActivity;
-  if (systemMode != toWidgetData. systemMode)
-    lastModeChange = millis();
-  systemMode = toWidgetData. systemMode;
+
 }
 
 unsigned long lastActivityAt = 0;
@@ -77,7 +165,8 @@ void setupComm(int wedgeAddress) {
   Wire.onRequest(requestEvent);
 
 }
-unsigned long activityReports = 0;
+
+
 //
 // handle Rx Event (incoming I2C request/data)
 //
@@ -111,6 +200,11 @@ void requestEvent(void)
   populateFromWidgetData();
   uint8_t * p = (uint8_t *)&fromWidgetData;
   Wire.write(p, sizeof(FromWidgetData));
+  sentMsg = true;
+  lastMsgSentAt = millis();
+  fromWidgetData.playGlobal = false;
+  fromWidgetData.playThisTrack = 0;
+
 }
 
 
