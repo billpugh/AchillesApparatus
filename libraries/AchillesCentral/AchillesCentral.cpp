@@ -58,7 +58,9 @@ int div30(int x) {
 
 void updateCentralData(SystemMode systemMode) {
   unsigned long ms = millis();
+#ifdef  ACHILLES_PACKET_DEBUG
   centralData.packetNum++;
+#endif
   centralData.minutesSinceGlobalBoot = ms / 1000 / 60;
   unsigned long secondsSinceActivity = (ms - lastActivity) / 1000;
   centralData.secondsSinceGlobalActivity = min(secondsSinceActivity, 65000);
@@ -85,29 +87,27 @@ void updateCentralData(SystemMode systemMode) {
 
 
     }
-    centralData. sunlight = (Sunlight) period;
+    centralData.daytime = (Daytime) period;
     centralData.lightLevel = lightLevel;
     Serial.print("sunlight: ");
-    Serial.println(centralData.sunlight);
+    Serial.println(centralData.daytime);
     Serial.print("light level: ");
     Serial.println(lightLevel);
 
 
 
-    centralData.hours = now.hour();
-    centralData.minutes = now.minute();
-    centralData.seconds  = now.minute();
+
   } else {
-    centralData.sunlight = UNKNOWN_SUNLIGHT;
+    centralData.daytime = UNKNOWN_SUNLIGHT;
     centralData.lightLevel = -2;
-    centralData.hours = centralData.minutes = centralData.seconds = 0;
+
 
   }
 }
 
 
 void scanWedges(SystemMode systemMode) {
-  totalPoints = 0;
+  int totalPointSum = 0;
   updateCentralData(systemMode);
   for (int i = 0; i < numWedges; i++) {
     WedgeData& w = wedges[i];
@@ -117,9 +117,11 @@ void scanWedges(SystemMode systemMode) {
       continue;
     }
     size_t sendSize = sizeof(ToWidgetData);
+#ifdef  ACHILLES_PACKET_DEBUG
     centralData.packetAck = w.data.packetNum;
     logf("Writing package %d, last ack %d, size %d\n",
          centralData.packetNum,  centralData.packetAck, sendSize);
+#endif
 
     Wire.beginTransmission(w.address);
     int written = Wire.write((uint8_t *)&centralData, sendSize);
@@ -138,18 +140,21 @@ void scanWedges(SystemMode systemMode) {
       continue;
     }
     Wire.readBytes((uint8_t*)&w.data, sizeof(w.data)); // copy Rx data to databuf
+#ifdef  ACHILLES_PACKET_DEBUG
     if (w.data.packetAck !=  centralData.packetNum)
       logf(" got ack of %d rather than %d from %s\n",
            w.data.packetAck,  centralData.packetNum, w.name);
+#endif
     if (w.position >= 0)
       for (int p = 0; p < 8; p++)
         if ( w.data.pointsActivated & (1 << p)) {
-          logf(" point %d set for %s\n", p, w.name);
+          logf(" point %d : %d set for %s\n", w.position, p, w.name);
           pointPixels.setPixelColor(w.position * 8 + p, 0x00ff00);
-          totalPoints++;
+          totalPointSum++;
         } else {
           pointPixels.setPixelColor(w.position * 8 + p, 0);
         }
   }
   pointPixels.show();
+  totalPoints = totalPointSum;
 }

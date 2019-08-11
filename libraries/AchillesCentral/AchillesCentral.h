@@ -30,6 +30,7 @@ extern unsigned long lastActivity;
 
 void initializeCentral();
 void scanWedges(SystemMode systemMode);
+int totalPoints();
 
 
 
