@@ -108,7 +108,6 @@ void updateCentralData(SystemMode systemMode) {
 
 void scanWedges(SystemMode systemMode) {
   totalPoints = 0;
-  uint16_t lastPacketNum = centralData.packetNum;
   updateCentralData(systemMode);
   for (int i = 0; i < numWedges; i++) {
     WedgeData& w = wedges[i];
@@ -125,7 +124,8 @@ void scanWedges(SystemMode systemMode) {
     Wire.beginTransmission(w.address);
     int written = Wire.write((uint8_t *)&centralData, sendSize);
     int error = Wire.endTransmission();
-    logf("Wrote %d bytes, expecting %d\n", written, sendSize);
+    if (written !=  sendSize)
+      logf("Wrote %d bytes, expecting %d\n", written, sendSize);
     if (error != 0) {
       logf("Got error %d writing to %s\n", error, w.name);
       continue;
@@ -138,9 +138,9 @@ void scanWedges(SystemMode systemMode) {
       continue;
     }
     Wire.readBytes((uint8_t*)&w.data, sizeof(w.data)); // copy Rx data to databuf
-    if (w.data.packetAck != lastPacketNum)
+    if (w.data.packetAck !=  centralData.packetNum)
       logf(" got ack of %d rather than %d from %s\n",
-           w.data.packetAck, lastPacketNum, w.name);
+           w.data.packetAck,  centralData.packetNum, w.name);
     if (w.position >= 0)
       for (int p = 0; p < 8; p++)
         if ( w.data.pointsActivated & (1 << p)) {
