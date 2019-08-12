@@ -2,6 +2,7 @@ import board
 import neopixel
 import time
 from digitalio import DigitalInOut, Direction, Pull
+import random
 
 red = (255, 0, 0)    # the tile moved
 white = (255, 255, 255)  # the tile pattern matches the goal pattern
@@ -72,11 +73,54 @@ def printPattern(matrix):
                 print("HORZ  ", end="")
         print("")
 
+# shuffle the maze rep times
+def shuffle(game, reps):
+    # find a hole
+    for r in range(5):
+        for c in range(5):
+            if game[r][c] == blnk:
+                hR = r
+                hC = c
+            break
+
+    for r in range(reps):
+        d = random.randint(4)
+        # Move down
+        if d == 0:
+            if hR != 0:
+                nR = hR-1
+                nC = hC
+        # Move up
+        elif d == 1:
+            if hR != 4:
+                nR = hR+1
+                nC = hC
+        # Move right
+        elif d == 2:
+            if hC != 0:
+                nR = hR
+                nC = hC-1
+        # Move left
+        else:
+            if hC != 4:
+                nR = hR
+                nC = hC+1
+        game[hR][hC] = game[nR][nC]
+        game[nR][nC] = blnk
+        # if the moved tile isn't blank, blink it green 
+        if (game[hR][hR] != blnk):
+            showPattern(tiles[hR][hC], game[hR][hC], green)
+            time.sleep(0.1)
+            showPattern(tiles[hR][hC], game[hR][hC], off)
+        hR = nR
+        hC = nC
+            
+
 # Find the holes. If only one found, return the location
 def findHoles(holeCount, holeRow, holeCol):
     x = 0
-    for r in range(0, 4):
-        for c in range(0, 4):
+    for r in range(5):
+        for c in range(5):
             if sense[r][c].value:
                 x = x + 1
                 holeRow = r
@@ -177,6 +221,8 @@ sense[4][2] = DigitalInOut(board.D25)
 sense[4][3] = DigitalInOut(board.D26)
 sense[4][4] = DigitalInOut(board.D27)
 
+resetButton = DigitalInOut(board.D1)
+
 # Define the matrix which tracks the positions of patterns on the board
 matrix = [[0 for r in range(5)] for c in range(5)]
 goal = [[0 for r in range(5)] for c in range(5)]
@@ -189,30 +235,32 @@ for r in range(5):
         matrix[r][c] = blnk
 
 goal[0][0] = blnk
-goal[0][1] = uprt
-goal[0][2] = uplt
-goal[0][3] = lort
+goal[0][1] = lort
+goal[0][2] = lolt
+goal[0][3] = uprt
 goal[0][4] = lolt
-goal[1][0] = vert
-goal[1][1] = horz
+goal[1][0] = horz
+goal[1][1] = uplt  
 goal[1][2] = vert
-goal[1][3] = horz
+goal[1][3] = blnk
 goal[1][4] = vert
-goal[2][0] = uplt
-goal[2][1] = uprt
-goal[2][2] = uplt
-goal[2][3] = uprt
+goal[2][0] = lort
+goal[2][1] = lolt
+goal[2][2] = vert
+goal[2][3] = lort
 goal[2][4] = uplt
-goal[3][0] = horz
-goal[3][1] = vert
-goal[3][2] = horz
-goal[3][3] = vert
-goal[3][4] = horz
+goal[3][0] = vert
+goal[3][1] = uprt
+goal[3][2] = uplt
+goal[3][3] = uprt
+goal[3][4] = lolt
 goal[4][0] = uprt
-goal[4][1] = uplt
-goal[4][2] = lort
-goal[4][3] = lolt
-goal[4][4] = lolt
+goal[4][1] = horz
+goal[4][2] = horz
+goal[4][3] = horz
+goal[4][4] = uplt
+goalEdge1 = 3
+goalEdge2 = 18
 
 matrix = goal
 
@@ -270,10 +318,8 @@ while True:
             rdir = abs(rdist)/rdist
             cdist = newHoleCol - oldHoleCol
             cdir = abs(cdist)/cdist
-
             if (rdist != 0) and (cdist != 0):
-                print("Hole moved both row and column!!!")
-
+                playSound("HoleJumped")
             if rdist != 0:
                 # slide things up or down the correct distance
                 for r in range(0, abs(rdist)-1):
