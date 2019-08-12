@@ -4,12 +4,13 @@ import time
 from digitalio import DigitalInOut, Direction, Pull
 import random
 
-red = (255, 0, 0)           # blink when the tile moves
-white = (255, 255, 255)     # the tile pattern matches the goal pattern
-blue = (0, 0, 255)          # the tile pattern does NOT match the goal pattern
-yellow = (255, 255, 0)      # blink before shuffle
-green = (0, 255, 0)         # blink after shuffle
-off = (0, 0, 0)
+mag = 50
+red = (mag, 0, 0)           # blink when the tile moves
+white = (mag, mag, mag)     # the tile pattern matches the goal pattern
+blue = (0, 0, mag)          # the tile pattern does NOT match the goal pattern
+yellow = (mag, mag, 0)      # blink before shuffle
+green = (0, mag, 0)         # blink after shuffle
+off = (0, 0, 0)             # no lights
 
 uplt = [True, False, False, True, True, False]
 uprt = [False, False, True, True, True, False]
@@ -84,7 +85,7 @@ def countNonBlanks(xx):
             if xx[r][c] != blnk:
                 nonBlank = nonBlank + 1
     return nonBlank
-    
+
 # shuffle the maze rep times
 def shuffle(game, reps):
     nR = 0
@@ -96,7 +97,7 @@ def shuffle(game, reps):
                 hR = r
                 hC = c
             break
-    
+
     repActual = 0
     for r in range(reps):
         d = random.randint(0, 3)
@@ -137,6 +138,7 @@ def shuffle(game, reps):
             hR = nR
             hC = nC
             printPattern(game)
+    #time.sleep(1.0)
     return hR, hC
 
 # Find the holes. If only one found, return the location
@@ -242,7 +244,13 @@ sense[4][2] = DigitalInOut(board.D25)
 sense[4][3] = DigitalInOut(board.D26)
 sense[4][4] = DigitalInOut(board.D27)
 
+# For big blue button:
+#  attach D1 to switch post near LED
+#  attach GND to post on back of switch
+
 resetButton = DigitalInOut(board.D1)
+resetButton.direction = Direction.INPUT
+resetButton.pull = Pull.UP
 
 # Define the matrix which tracks the positions of patterns on the board
 matrix = [[0 for r in range(5)] for c in range(5)]
@@ -299,16 +307,22 @@ cdist = 0
 pieces = 0
 match = 0
 
-shuffleReps = 5
+shuffleReps = 100
 
 # Loop per game
 for r in range(5):
     for c in range(5):
+
+
         matrix[r][c] = goal[r][c]
 
-printPattern(goal)
-printPattern(matrix)
+
 oldHoleRow, oldHoleCol = shuffle(matrix, shuffleReps)
+pieces, match = matchRealityToGoal(matrix, goal)
+print("Matrix")
+printPattern(matrix)
+print("Goal")
+printPattern(goal)
 
 # ----------------------------------------------------------
 # Main loop
@@ -380,7 +394,9 @@ while True:
             oldHoleRow = newHoleRow
             oldHoleCol = newHoleCol
 
+    print("Matrix")
     printPattern(matrix)
+    print("goal")
     printPattern(goal)
     pieces, match = matchRealityToGoal(matrix, goal)
     print("Progress: ", match, "out of", pieces)
