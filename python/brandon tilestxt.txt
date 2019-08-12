@@ -1,0 +1,46 @@
+# this defines the patterns of which LEDs are on or off
+juts  ....# starting at the top and going around clockwise
+upper_left = [True, False, False, True]
+upper_right = [True, True, False, False]
+
+# this defines a function "showPattern"
+# with two arguments, the board to affect and the pattern
+def showPattern(board, pattern):
+  # this loops over the pattern
+  # the enumerate function returns a tuple of values
+  # whichh we're immediately destructuring into two
+  # variables, the index in the list and the led value
+  for index, led in enumerate(pattern):
+    if led:
+       board[index] = (255, 0, 0)
+    else:
+       board[index] = (0, 0, 0)
+  board.show()
+
+tiles = []
+tiles[0] = [
+  neopixel.NeoPixel(board.D20, 6, auto_write=True), 
+  neopixel.NeoPixel(board.D21, 6, auto_write=True), 
+  neopixel.NeoPixel(board.D22, 6, auto_write=True), 
+  neopixel.NeoPixel(board.D23, 6, auto_write=True),
+  neopixel.NeoPixel(board.D24, 6, auto_write=True),]
+tiles[1] = [
+  neopixel.NeoPixel(board.D25, 6, auto_write=True), 
+  neopixel.NeoPixel(board.D26, 6, auto_write=True), 
+  neopixel.NeoPixel(board.D27, 6, auto_write=True), 
+  neopixel.NeoPixel(board.D28, 6, auto_write=True),
+  neopixel.NeoPixel(board.D29, 6, auto_write=True),]
+tiles[2] = [
+  neopixel.NeoPixel(board.D30, 6, auto_write=True), 
+  neopixel.NeoPixel(board.D31, 6, auto_write=True), 
+  neopixel.NeoPixel(board.D32, 6, auto_write=True), 
+  neopixel.NeoPixel(board.D33, 6, auto_write=True),
+  neopixel.NeoPixel(board.D34, 6, auto_write=True),]
+tiles[3] = [
+  neopixel.NeoPixel(board.D35, 6, auto_write=True), 
+  neopixel.NeoPixel(board.D36, 6, auto_write=True), 
+  neopixel.NeoPixel(board.D37, 6, auto_write=True), 
+  neopixel.NeoPixel(board.D39, 6, auto_write=True),
+  neopixel.NeoPixel(board.D40, 6, auto_write=True),]
+  
+showPattern(tiles[0][0], upper_left)
