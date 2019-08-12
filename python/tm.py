@@ -27,7 +27,10 @@ crosshole = [True, False, True, True, False, True]
 center = [False, False, False, False, True, False]
 
 sounds = [
-    "TileMoved",
+    "TileMovedRowUp",
+    "TileMovedRowDn",
+    "TileMovedColRt",
+    "TileMovedColLt",
     "Shuffle",
     "Progress25",
     "Progress50",
@@ -348,7 +351,10 @@ while True:
                         tiles[oldHoleRow+r*rdir][oldHoleCol],
                         matrix[oldHoleRow+r*rdir][oldHoleCol],
                         red)
-                    playSound("TileMoved")
+                    if rdir > 0:
+                        playSound("TileMovedRowUp")
+                    else:
+                        playSound("TileMovedRowDn")
             else:  # must be cdist > 0
                 # slide things right or left the correct distance
                 cdir = int(abs(cdist)/cdist)
@@ -359,7 +365,10 @@ while True:
                         tiles[oldHoleRow][oldHoleCol+c*cdir],
                         matrix[oldHoleRow][oldHoleCol+c*cdir],
                         red)
-                    playSound("TileMoved")
+                    if cdir > 0:
+                        playSound("TileMovedColLt")
+                    else:
+                        playSound("TileMovedColRt")
             matrix[newHoleRow][newHoleCol] = blnk
             time.sleep(0.25)
 
