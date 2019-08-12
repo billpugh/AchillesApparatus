@@ -71,6 +71,15 @@ def printPattern(matrix):
         print("")
     print("")
 
+# count the number of non-blank patterns
+def countNonBlanks(xx):
+    nonBlank = 0
+    for r in range(5):
+        for c in range(5):
+            if xx[r][c] != blnk:
+                nonBlank = nonBlank + 1
+    return nonBlank
+    
 # shuffle the maze rep times
 def shuffle(game, reps):
     nR = 0
@@ -82,10 +91,10 @@ def shuffle(game, reps):
                 hR = r
                 hC = c
             break
-    print("Hole: ", hR, ",", hC)
+    
+    repActual = 0
     for r in range(reps):
         d = random.randint(0, 3)
-        print("D: ", d)
         # Move down
         if d == 0:
             if hR != 0:
@@ -106,21 +115,24 @@ def shuffle(game, reps):
             if hC != 4:
                 nR = hR
                 nC = hC+1
-        print("NewHole:", nR, ",", nC)
-        game[hR][hC] = game[nR][nC]
-        game[nR][nC] = blnk
-        if (game[hR][hR] != blnk):
-            # blink the pattern in the old space
-            showPattern(tiles[nR][nC], game[nR][hC], yellow)
-            time.sleep(0.05)
-            showPattern(tiles[nR][nC], game[hR][hC], off)
-            # blink the patter in the new space
-            showPattern(tiles[hR][hC], game[hR][hC], green)
-            time.sleep(0.05)
-            showPattern(tiles[hR][hC], game[hR][hC], off)
-        hR = nR
-        hC = nC
-        printPattern(game)
+        if (nR != hR) or (nC != hC):
+            repActual = repActual + 1
+            game[hR][hC] = game[nR][nC]
+            game[nR][nC] = blnk
+            if (game[hR][hR] != blnk):
+                # blink the pattern in the old space
+                showPattern(tiles[nR][nC], game[hR][hC], yellow)
+                time.sleep(0.05)
+                showPattern(tiles[nR][nC], game[hR][hC], off)
+                # blink the patter in the new space
+                showPattern(tiles[hR][hC], game[hR][hC], green)
+                time.sleep(0.05)
+                showPattern(tiles[hR][hC], game[hR][hC], off)
+            hR = nR
+            hC = nC
+            printPattern(game)
+    print("Actual:", repActual)
+    return hR, hC
 
 
 # Find the holes. If only one found, return the location
@@ -266,10 +278,9 @@ goal[4][1] = horz
 goal[4][2] = horz
 goal[4][3] = horz
 goal[4][4] = uplt
-goalEdge1 = 3
-goalEdge2 = 18
-
-matrix = goal
+goalBegin = 3
+goalEnd = 18
+goalComplexity = countNonBlanks(goal)
 
 # Define misc stuff
 
@@ -288,53 +299,49 @@ progress = 0.0
 rr = 0
 cc = 0
 
-shuffleReps = 1000
+shuffleReps = 10
+
+# Loop per game
+matrix = goal
+printPattern(matrix)
+oldHoleRow, oldHoleCol = shuffle(matrix, shuffleReps)
 
 # ----------------------------------------------------------
 # Main loop
 # ----------------------------------------------------------
-
 while True:
 
-    time.sleep(1.0)
-    printPattern(matrix)
-    shuffle(matrix, shuffleReps)
-    break
-
-    # look for holes in the matrix
+    # look for physical holes in the game table
     # findHoles(numHoles, newHoleRow, newHoleCol)
     # +++++++ do it manually for now
-    newHoleRow = int(input("New blank row: "))
-    newHoleCol = int(input("New blank col: "))
+    print("Old: ", oldHoleRow, ",", oldHoleCol)
     numHoles = 1
+    newHoleRow = int(input("New row: "))
+    newHoleCol = int(input("New col: "))
 
-    time.sleep(2.0)
-
-    # If the number of holes is more then one, mis-alignment or errors.
+    # If num holes > 1, then mis-alignment or errors.
     # Count 'em for awhile and then complain
     if (numHoles > 1):
         countMultiHoles = countMultiHoles + 1
         if (countMultiHoles > countMultiHolesLimit):
-            print("Hey, fix the tiles!!!")
+            playSound("MultiHolesFail")
     else:
         countMultiHoles = 0
         print("Old: ", oldHoleRow, ",", oldHoleCol)
         print("New: ", newHoleRow, ",", newHoleCol)
-
+        rdist = newHoleRow - oldHoleRow
+        cdist = newHoleCol - oldHoleCol
         # Did anything move?
-        if (oldHoleRow == newHoleRow) and (oldHoleCol == newHoleCol):
+        if (rdist == 0) and (cdist == 0):
             print("No change:", oldHoleRow, ",", oldHoleCol)
         else:
-            # Figure out how many tiles moved ahdn which direction
-            rdist = newHoleRow - oldHoleRow
-            rdir = abs(rdist)/rdist
-            cdist = newHoleCol - oldHoleCol
-            cdir = abs(cdist)/cdist
             if (rdist != 0) and (cdist != 0):
                 playSound("HoleJumped")
             if rdist != 0:
+                # How many tiles moved? Which direction?
+                rdir = int(abs(rdist)/rdist)
                 # slide things up or down the correct distance
-                for r in range(0, abs(rdist)-1):
+                for r in range(0, abs(rdist)):
                     matrix[oldHoleRow+r*rdir][oldHoleCol] = \
                         matrix[oldHoleRow+(r+1)*rdir][oldHoleCol]
                     showPattern(
@@ -344,7 +351,8 @@ while True:
                     playSound("TileMoved")
             else:  # must be cdist > 0
                 # slide things right or left the correct distance
-                for c in range(0, abs(cdist)-1):
+                cdir = int(abs(cdist)/cdist)
+                for c in range(0, abs(cdist)):
                     matrix[oldHoleRow][oldHoleCol+c*cdir] = \
                         matrix[oldHoleRow][oldHoleCol+(c+1)*cdir]
                     showPattern(
@@ -359,15 +367,10 @@ while True:
                 tiles[newHoleRow][newHoleCol],
                 matrix[newHoleRow][newHoleCol],
                 off)
-            print(
-                "Moved: Old Hole:",
-                oldHoleRow, ",",
-                oldHoleCol, "  New Hole:",
-                newHoleRow, ",",
-                newHoleCol)
             oldHoleRow = newHoleRow
             oldHoleCol = newHoleCol
 
+    printPattern(matrix)
     # matchRealityToGoal(matrix, goal, result, progress)
 
     if result:
