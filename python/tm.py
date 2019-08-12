@@ -19,12 +19,26 @@ horz = [True, False, True, False, True, False]
 blnk = [False, False, False, False, False, False]
 hole = blnk
 
-patterns = [blnk, uplt, uprt, lolt, lort, vert, horz] 
+patterns = [blnk, uplt, uprt, lolt, lort, vert, horz]
 
 cross = [True, False, True, True, True, True]
 crosshole = [True, False, True, True, False, True]
 center = [False, False, False, False, True, False]
 
+sounds = [
+    "TileMoved",
+    "Shuffle",
+    "Solved1",
+    "Solved2",
+    "Solved3",
+    "Solved4",
+    "Solved5",
+    "Solved6",
+    "Solved7",
+    "Solved8",
+    "MultiHoles",
+    "MultiHolesFail"
+    "HoleJumped"]
 
 # For the tile, set the LEDs to specifed pattern and indicated color
 def showPattern(tile, pattern, color):
@@ -34,6 +48,9 @@ def showPattern(tile, pattern, color):
         else:
             tile[index] = off
     tile.show()
+    
+def playSound(sound):
+    print("Sound: ", sound)
 
 # Print configuration of matrix
 def printPattern(matrix):
@@ -197,7 +214,7 @@ goal[4][2] = lort
 goal[4][3] = lolt
 goal[4][4] = lolt
 
-matrix = goal        
+matrix = goal
 
 # Define misc stuff
 
@@ -221,7 +238,7 @@ cc = 0
 # ----------------------------------------------------------
 
 while True:
-    
+
     printPattern(matrix)
 
     # look for holes in the matrix
@@ -230,7 +247,7 @@ while True:
     newHoleRow = int(input("New blank row: "))
     newHoleCol = int(input("New blank col: "))
     numHoles = 1
-    
+
     time.sleep(2.0)
 
     # If the number of holes is more then one, mis-alignment or errors.
@@ -243,38 +260,43 @@ while True:
         countMultiHoles = 0
         print("Old: ", oldHoleRow, ",", oldHoleCol)
         print("New: ", newHoleRow, ",", newHoleCol)
-        
+
         # Did anything move?
         if (oldHoleRow == newHoleRow) and (oldHoleCol == newHoleCol):
             print("No change:", oldHoleRow, ",", oldHoleCol)
         else:
-            # Figure out how many tiles moved... could be more than one
-            rdist = oldHoleRow - newHoleRow
-            cdist = oldHoleCol - newHoleCol
+            # Figure out how many tiles moved ahdn which direction
+            rdist = newHoleRow - oldHoleRow
+            rdir = abs(rdist)/rdist
+            cdist = newHoleCol - oldHoleCol
+            cdir = abs(cdist)/cdist
 
             if (rdist != 0) and (cdist != 0):
                 print("Hole moved both row and column!!!")
 
             if rdist != 0:
                 # slide things up or down the correct distance
-                for r in range(0, abs(cdist)-1):
-                    matrix[oldHoleRow+r][oldHoleCol] = \
-                        matrix[oldHoleRow+r+abs(rdist)/rdist][oldHoleCol]
+                for r in range(0, abs(rdist)-1):
+                    matrix[oldHoleRow+r*rdir][oldHoleCol] = \
+                        matrix[oldHoleRow+(r+1)*rdir][oldHoleCol]
                     showPattern(
-                        tiles[oldHoleRow+r][oldHoleCol],
-                        matrix[oldHoleRow+r][oldHoleCol],
+                        tiles[oldHoleRow+r*rdir][oldHoleCol],
+                        matrix[oldHoleRow+r*rdir][oldHoleCol],
                         red)
+                    playSound("TileMoved")
             else:  # must be cdist > 0
                 # slide things right or left the correct distance
                 for c in range(0, abs(cdist)-1):
-                    matrix[oldHoleRow][oldHoleCol+c] = \
-                        matrix[oldHoleRow][oldHoleCol+c+(abs(cdist)/cdist)]
+                    matrix[oldHoleRow][oldHoleCol+c*cdir] = \
+                        matrix[oldHoleRow][oldHoleCol+(c+1)*cdir]
                     showPattern(
-                        tiles[oldHoleRow][oldHoleCol+c],
-                        matrix[oldHoleRow][oldHoleCol+c],
+                        tiles[oldHoleRow][oldHoleCol+c*cdir],
+                        matrix[oldHoleRow][oldHoleCol+c*cdir],
                         red)
-
+                    playSound("TileMoved")    
             matrix[newHoleRow][newHoleCol] = blnk
+            time.sleep(0.25)
+            
             showPattern(
                 tiles[newHoleRow][newHoleCol],
                 matrix[newHoleRow][newHoleCol],
@@ -308,5 +330,4 @@ while True:
         showPattern(tiles[0][0], horz, blue)
 
     time.sleep(0.01)
-
 
