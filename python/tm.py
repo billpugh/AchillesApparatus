@@ -10,13 +10,14 @@ green = (0, 255, 0)
 yellow = (255, 255, 0)
 off = (0, 0, 0)
 
-blnk = [False, False, False, False, False, False]
 uplt = [True, False, False, True, True, False]
 uprt = [False, False, True, True, True, False]
 lolt = [True, False, False, False, True, True]
 lort = [False, False, True, False, True, True]
 vert = [False, False, False, True, True, True]
 horz = [True, False, True, False, True, False]
+blnk = [False, False, False, False, False, False]
+hole = blnk
 
 patterns = [blnk, uplt, uprt, lolt, lort, vert, horz] 
 
@@ -74,7 +75,7 @@ def matchRealityToGoal(matrix, goal, result, progress):
         for c in range(0, 4):
 
             # count the game pieces
-            if (matrix[r][c] != blank):
+            if (matrix[r][c] != blnk):
                 pieces = pieces + 1.0
 
             # do they match?
@@ -82,7 +83,7 @@ def matchRealityToGoal(matrix, goal, result, progress):
                 showPattern(tiles[r][c], matrix[r][c], white)
 
                 # and they are not blank?
-                if (matrix[r][c] != blank):
+                if (matrix[r][c] != blnk):
                     progress = progress + 1.0
             else:
                 showPattern(tiles[r][c], matrix[r][c], blue)
@@ -161,6 +162,7 @@ sense[4][4] = DigitalInOut(board.D27)
 
 # Define the matrix which tracks the positions of patterns on the board
 matrix = [[0 for r in range(5)] for c in range(5)]
+goal = [[0 for r in range(5)] for c in range(5)]
 
 # Initialize stuff
 for r in range(5):
@@ -168,6 +170,34 @@ for r in range(5):
         sense[r][c].direction = Direction.INPUT
         sense[r][c].pull = Pull.UP
         matrix[r][c] = blnk
+
+goal[0][0] = blnk
+goal[0][1] = uprt
+goal[0][2] = uplt
+goal[0][3] = lort
+goal[0][4] = lolt
+goal[1][0] = vert
+goal[1][1] = horz
+goal[1][2] = vert
+goal[1][3] = horz
+goal[1][4] = vert
+goal[2][0] = uplt
+goal[2][1] = uprt
+goal[2][2] = uplt
+goal[2][3] = uprt
+goal[2][4] = uplt
+goal[3][0] = horz
+goal[3][1] = vert
+goal[3][2] = horz
+goal[3][3] = vert
+goal[3][4] = horz
+goal[4][0] = uprt
+goal[4][1] = uplt
+goal[4][2] = lort
+goal[4][3] = lolt
+goal[4][4] = lolt
+
+matrix = goal        
 
 # Define misc stuff
 
@@ -180,20 +210,28 @@ oldHoleCol = 0
 newHoleRow = 0
 newHoleCol = 0
 rdist = 0
-vdist = 0
+cdist = 0
 result = False
 progress = 0.0
+rr = 0
+cc = 0
 
 # ----------------------------------------------------------
 # Main loop
 # ----------------------------------------------------------
+
 while True:
     
     printPattern(matrix)
-    time.sleep(5.0)
 
     # look for holes in the matrix
-    findHoles(numHoles, newHoleRow, newHoleCol)
+    # findHoles(numHoles, newHoleRow, newHoleCol)
+    # +++++++ do it manually for now
+    newHoleRow = int(input("New blank row: "))
+    newHoleCol = int(input("New blank col: "))
+    numHoles = 1
+    
+    time.sleep(2.0)
 
     # If the number of holes is more then one, mis-alignment or errors.
     # Count 'em for awhile and then complain
@@ -203,7 +241,9 @@ while True:
             print("Hey, fix the tiles!!!")
     else:
         countMultiHoles = 0
-
+        print("Old: ", oldHoleRow, ",", oldHoleCol)
+        print("New: ", newHoleRow, ",", newHoleCol)
+        
         # Did anything move?
         if (oldHoleRow == newHoleRow) and (oldHoleCol == newHoleCol):
             print("No change:", oldHoleRow, ",", oldHoleCol)
@@ -212,28 +252,29 @@ while True:
             rdist = oldHoleRow - newHoleRow
             cdist = oldHoleCol - newHoleCol
 
-            # Note: if rdist != 0 && vdist != 0 we have a big problem!!!
+            if (rdist != 0) and (cdist != 0):
+                print("Hole moved both row and column!!!")
 
             if rdist != 0:
                 # slide things up or down the correct distance
-                for r in range(0, abs(vdist)-1):
+                for r in range(0, abs(cdist)-1):
                     matrix[oldHoleRow+r][oldHoleCol] = \
                         matrix[oldHoleRow+r+abs(rdist)/rdist][oldHoleCol]
                     showPattern(
                         tiles[oldHoleRow+r][oldHoleCol],
                         matrix[oldHoleRow+r][oldHoleCol],
                         red)
-            else:  # must be hdist > 0
+            else:  # must be cdist > 0
                 # slide things right or left the correct distance
                 for c in range(0, abs(cdist)-1):
                     matrix[oldHoleRow][oldHoleCol+c] = \
-                        matrix[oldHoleRow][oldHoleCol+c+(abs(vdist)/vdist)]
+                        matrix[oldHoleRow][oldHoleCol+c+(abs(cdist)/cdist)]
                     showPattern(
                         tiles[oldHoleRow][oldHoleCol+c],
                         matrix[oldHoleRow][oldHoleCol+c],
                         red)
 
-            matrix[newHoleRow][newHoleCol] = blank
+            matrix[newHoleRow][newHoleCol] = blnk
             showPattern(
                 tiles[newHoleRow][newHoleCol],
                 matrix[newHoleRow][newHoleCol],
