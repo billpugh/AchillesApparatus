@@ -10,13 +10,15 @@ green = (0, 255, 0)
 yellow = (255, 255, 0)
 off = (0, 0, 0)
 
-blank = [False, False, False, False, False, False]
-upleft = [True, False, False, True, True, False]
-upright = [False, False, True, True, True, False]
-lowleft = [True, False, False, False, True, True]
-lowright = [False, False, True, False, True, True]
+blnk = [False, False, False, False, False, False]
+uplt = [True, False, False, True, True, False]
+uprt = [False, False, True, True, True, False]
+lolt = [True, False, False, False, True, True]
+lort = [False, False, True, False, True, True]
 vert = [False, False, False, True, True, True]
 horz = [True, False, True, False, True, False]
+
+patterns = [blnk, uplt, uprt, lolt, lort, vert, horz] 
 
 cross = [True, False, True, True, True, True]
 crosshole = [True, False, True, True, False, True]
@@ -34,9 +36,23 @@ def showPattern(tile, pattern, color):
 
 # Print configuration of matrix
 def printPattern(matrix):
-    for r in range(0, 4):
-        print(matrix[r])
-
+    for r in range(5):
+        for c in range(5):
+            if (matrix[r][c] == blnk):
+                print("BLNK  ", end="")
+            if (matrix[r][c] == uplt):
+                print("UPLT  ", end="")
+            if (matrix[r][c] == uprt):
+                print("UPRT  ", end="")
+            if (matrix[r][c] == lolt):
+                print("LOLT  ", end="")
+            if (matrix[r][c] == lort):
+                print("LORT  ", end="")
+            if (matrix[r][c] == vert):
+                print("VERT  ", end="")
+            if (matrix[r][c] == horz):
+                print("HORZ  ", end="")
+        print("")
 
 # Find the holes. If only one found, return the location
 def findHoles(holeCount, holeRow, holeCol):
@@ -147,11 +163,11 @@ sense[4][4] = DigitalInOut(board.D27)
 matrix = [[0 for r in range(5)] for c in range(5)]
 
 # Initialize stuff
-for r in range(0, 4):
-    for c in range(0, 4):
+for r in range(5):
+    for c in range(5):
         sense[r][c].direction = Direction.INPUT
         sense[r][c].pull = Pull.UP
-        matrix[r][c] = blank
+        matrix[r][c] = blnk
 
 # Define misc stuff
 
@@ -172,6 +188,9 @@ progress = 0.0
 # Main loop
 # ----------------------------------------------------------
 while True:
+    
+    printPattern(matrix)
+    time.sleep(5.0)
 
     # look for holes in the matrix
     findHoles(numHoles, newHoleRow, newHoleCol)
@@ -248,6 +267,5 @@ while True:
         showPattern(tiles[0][0], horz, blue)
 
     time.sleep(0.01)
-
 
 
