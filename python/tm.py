@@ -27,11 +27,13 @@ crosshole = [True, False, True, True, False, True]
 center = [False, False, False, False, True, False]
 
 sounds = [
+    "TileMoved",
     "TileMovedRowUp",
     "TileMovedRowDn",
     "TileMovedColRt",
     "TileMovedColLt",
-    "Shuffle",
+    "ShuffleStart",
+    "ShuffleStop",
     "Progress25",
     "Progress50",
     "Progress75",
@@ -131,12 +133,11 @@ def shuffle(game, reps):
                 showPattern(tiles[hR][hC], game[hR][hC], green)
                 time.sleep(0.05)
                 showPattern(tiles[hR][hC], game[hR][hC], off)
+                playSound("TileMoved")
             hR = nR
             hC = nC
             printPattern(game)
-    print("Actual:", repActual)
     return hR, hC
-
 
 # Find the holes. If only one found, return the location
 def findHoles(holeCount, holeRow, holeCol):
@@ -150,16 +151,15 @@ def findHoles(holeCount, holeRow, holeCol):
     holeCount = x
 
 # How's it going?
-def matchRealityToGoal(matrix, goal, result, progress):
-    progress = 0.0
-    pieces = 0.0
-    result = True
-    for r in range(0, 4):
-        for c in range(0, 4):
+def matchRealityToGoal(matrix, goal):
+    m = 0
+    p = 0
+    for r in range(5):
+        for c in range(5):
 
             # count the game pieces
             if (matrix[r][c] != blnk):
-                pieces = pieces + 1.0
+                p = p + 1
 
             # do they match?
             if (matrix[r][c] == goal[r][c]):
@@ -167,13 +167,12 @@ def matchRealityToGoal(matrix, goal, result, progress):
 
                 # and they are not blank?
                 if (matrix[r][c] != blnk):
-                    progress = progress + 1.0
+                    m = m + 1
             else:
                 showPattern(tiles[r][c], matrix[r][c], blue)
-                result = False
 
     # send back a percentage completion
-    progress = pieces / progress
+    return p, m
 
 # ---------------------------------------------------------------------------
 # Define the tile light strips as a 2D array
@@ -297,15 +296,17 @@ newHoleRow = 0
 newHoleCol = 0
 rdist = 0
 cdist = 0
-result = False
-progress = 0.0
-rr = 0
-cc = 0
+pieces = 0
+match = 0
 
-shuffleReps = 10
+shuffleReps = 5
 
 # Loop per game
-matrix = goal
+for r in range(5):
+    for c in range(5):
+        matrix[r][c] = goal[r][c]
+
+printPattern(goal)
 printPattern(matrix)
 oldHoleRow, oldHoleCol = shuffle(matrix, shuffleReps)
 
@@ -380,19 +381,13 @@ while True:
             oldHoleCol = newHoleCol
 
     printPattern(matrix)
-    # matchRealityToGoal(matrix, goal, result, progress)
+    printPattern(goal)
+    pieces, match = matchRealityToGoal(matrix, goal)
+    print("Progress: ", match, "out of", pieces)
 
-    if result:
+    if (match == pieces):
         playSound("Solved")
-    else:
-        if progress > .9:
-            playSound("Progress90")
-        elif progress > .75:
-            playSound("Progress75")
-        elif progress > 0.50:
-            playSound("Processor50")
-        elif progress > 0.25:
-            playSound("Progress25")
+
 
 #    if sense[1][1].value:
 #        showPattern(tiles[0][0], vert, red)
