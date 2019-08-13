@@ -26,12 +26,14 @@ void setup() {
   logf("Enabled the watchdog with max countdown of %d ms\n", countdownMS);
   initializeCentral();
   initializeSound();
+  centralData
 
 }
 
 void loop() {
   Watchdog.reset();
   lastActivity = millis();
+  updateClock();
   scanWedges(ACTIVE);
   updateSound();
   delay(50);
