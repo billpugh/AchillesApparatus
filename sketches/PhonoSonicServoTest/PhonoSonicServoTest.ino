@@ -34,6 +34,9 @@ Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 #define SERVOMIN  250 // this is the 'minimum' pulse length count (out of 4096)
 #define SERVOMAX  500 // this is the 'maximum' pulse length count (out of 4096)
 
+const uint16_t minMicros = 1058;
+const uint16_t maxMicros = 1465;
+
 // our servo # counter
 uint8_t servonum = 0;
 
@@ -72,11 +75,11 @@ float twoPi = 6.2831853072;
 
 // depth should be 0...1, with 1 being maximum depth
 int getPulseLength(float depth) {
-  return 360- 100.0 * v;
+  return 360- 100.0 * depth;
 }
 void loop() {
   float radians = ((float)millis() / millisecondsPerWave) * twoPi;
-  float depth = (sin(radians)+1)*amplitude;
+  float depth = (sin(radians)+1)/2*amplitude;
   int pulselen = constrain(getPulseLength(depth), 260, 360);
   Serial.println(pulselen);
   pwm.setPWM(servonum, 0, pulselen);
