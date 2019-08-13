@@ -271,6 +271,7 @@ def moveRows(game, dist, ohR, ohC):
             playSound("TileMovedRowUp")
         else:
             playSound("TileMovedRowDn")
+        printPattern(game)
 
 # ---------------------------------------------------------
 # Move tiles right and left
@@ -288,6 +289,7 @@ def moveCols(game, dist, ohR, ohC):
             playSound("TileMovedColLt")
         else:
             playSound("TileMovedColRt")
+        printPattern(game)
 
 # -----------------------------------------------------------
 # How's it going?
@@ -323,7 +325,7 @@ goal[0][4] = lolt
 goal[1][0] = horz
 goal[1][1] = uplt
 goal[1][2] = vert
-goal[1][3] = blnk
+goal[1][3] = vert  # blnk
 goal[1][4] = vert
 goal[2][0] = lort
 goal[2][1] = lolt
@@ -361,7 +363,7 @@ pieces = 0
 matches = 0
 progress = 0.0
 
-shuffleReps = 5
+shuffleReps = 10
 
 # Define the matrix which tracks the positions of patterns on the board
 matrix = [[0 for r in range(5)] for c in range(5)]
@@ -375,8 +377,35 @@ for r in range(5):
     for c in range(5):
         matrix[r][c] = goal[r][c]
 
+# -------------------------------------------------------------------
+# shuffle
 oldHoleRow, oldHoleCol = shuffle(matrix, shuffleReps)
+
+# ----------------------------------------------------
+# Find physical hole and move virtual hole to match
+# numHoles, newHoleRow, newHoleCol = findHoles()
+numHoles = 1
+newHoleRow = int(input("Physical hole row: "))
+newHoleCol = int(input("Physical hole col: "))
+
+if numHoles == 0:
+    playSound("No holes!!!!")
+elif numHoles > 1:
+    playSound("Tiles not aligned")
+else:
+    if newHoleRow-oldHoleRow != 0:
+        moveRows(matrix, newHoleRow-oldHoleRow, oldHoleRow, oldHoleCol)
+        oldHoleRow = newHoleRow
+        matrix[oldHoleRow][oldHoleCol] = blnk
+    if newHoleCol-oldHoleCol != 0:
+        moveCols(matrix, newHoleCol-oldHoleCol, oldHoleRow, oldHoleCol)
+        oldHoleCol = newHoleCol
+        matrix[oldHoleRow][oldHoleCol] = blnk
+
+# ---------------------------------
+# Check match agains goal
 pieces, match = matchRealityToGoal(matrix, goal)
+
 print("Matrix")
 printPattern(matrix)
 print("Goal")
@@ -388,7 +417,7 @@ printPattern(goal)
 while True:
 
     # look for physical holes in the game table
-    numHoles, newHoleRow, newHoleCol = findHoles()
+    # numHoles, newHoleRow, newHoleCol = findHoles()
     # +++++++ do it manually for now
     print("Old: ", oldHoleRow, ",", oldHoleCol)
     numHoles = 1
@@ -443,4 +472,3 @@ while True:
         playSound("Progress50")
     elif progress > 0.25:
         playSound("Progress25")
-        
