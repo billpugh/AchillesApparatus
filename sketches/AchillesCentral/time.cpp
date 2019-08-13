@@ -3,6 +3,7 @@
 #include <Wire.h>
 #include "RTClib.h"
 #include "AchillesCentral.h"
+#include "time.h"
 
 
 RTC_DS3231 rtc;
@@ -17,9 +18,19 @@ void initializeClock() {
     return;
   }
   clockRunning = true;
+  DateTime now = rtc.now();
+  printf("Time is %02d:%02d:%02d\n", now.hour(), now.minute(), now.second());
 }
 
+int div30(int x) {
+  return (x + 3000) / 30 - 100;
+}
 void updateClock() {
+  if (!clockRunning) {
+    centralData.daytime = UNKNOWN_SUNLIGHT;
+    centralData.lightLevel = -2;
+    return;
+  }
   DateTime now = rtc.now();
   int hour = now.hour();
   int totalMinutes = now.hour() * 60 + now.minute();
@@ -41,6 +52,6 @@ void updateClock() {
 
 
   }
-  centralData.sunlight = (Sunlight) period;
+  centralData.daytime = (Daytime) period;
   centralData.lightLevel = lightLevel;
 }

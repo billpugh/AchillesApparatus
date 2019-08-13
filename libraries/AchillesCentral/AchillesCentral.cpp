@@ -9,10 +9,6 @@
 #include <Adafruit_NeoPixel.h>
 Adafruit_NeoPixel pointPixels(8 * 6, 3, NEO_GRB + NEO_KHZ800);
 
-RTC_DS3231 rtc;
-
-boolean rtcWorking = true;
-
 void checkWedges() {
   for (int i = 0; i < numWedges; i++) {
     WedgeData& w = wedges[i];
@@ -31,18 +27,16 @@ void checkWedges() {
 
 
 void initializeCentral() {
+  Serial.println("Starting wire...");
+  Wire.begin();
+  Serial.println("Wire started...");
   pointPixels.begin();
 
   for (int i = 0; i < 8; i++)
     pointPixels.setPixelColor(i, 0x00ff00);
   pointPixels.show();
 
-  if (! rtc.begin()) {
-    Serial.println("Couldn't find RTC");
-    rtcWorking = false;
-  }
-  DateTime now = rtc.now();
-  logf("Time is %02d:%02d:%02d\n", now.hour(), now.minute(), now.second());
+
   checkWedges();
   for (int i = 0; i < 8; i++)
     pointPixels.setPixelColor(i, 0);
@@ -52,10 +46,6 @@ void initializeCentral() {
 
 ToWidgetData centralData;
 
-
-int div30(int x) {
-  return (x + 3000) / 30 - 100;
-}
 
 void updateCentralData(SystemMode systemMode) {
   unsigned long ms = millis();
@@ -67,43 +57,6 @@ void updateCentralData(SystemMode systemMode) {
   centralData.secondsSinceGlobalActivity = min(secondsSinceActivity, 65000);
   centralData. systemMode = systemMode;
 
-  if (rtcWorking) {
-    DateTime now = rtc.now();
-    int totalMinutes = now.hour() * 60 + now.minute();
-    const int sunRise = 6 * 60 + 20;
-    const int sunSet = 19 * 60 +  38;
-    int period;
-    int lightLevel;
-    if (now.hour() < 12) {
-      // AM
-      Serial.println(totalMinutes - sunRise);
-      period = constrain(div30(totalMinutes - sunRise), -2, 1) + 2;
-      lightLevel = constrain(div30(totalMinutes - sunRise), -3, 1) - 1;
-    } else {
-      // PM
-      Serial.println(totalMinutes - sunRise);
-      period = constrain(div30(totalMinutes - sunSet), -2, 1) + 5;
-      if (period == 6) period = 0;
-      lightLevel = constrain(div30(sunSet - totalMinutes), -2, 2) - 2;
-
-
-    }
-    centralData.daytime = (Daytime) period;
-    centralData.lightLevel = lightLevel;
-    Serial.print("sunlight: ");
-    Serial.println(centralData.daytime);
-    Serial.print("light level: ");
-    Serial.println(lightLevel);
-
-
-
-
-  } else {
-    centralData.daytime = UNKNOWN_SUNLIGHT;
-    centralData.lightLevel = -2;
-
-
-  }
 }
 
 unsigned long nextScanReport = 1000;
@@ -115,7 +68,7 @@ void scanWedges(SystemMode systemMode) {
   int scannedWedges = 0;
   for (int i = 0; i < numWedges; i++) {
     WedgeData& w = wedges[i];
-    logf("Wedge %s at %02x\n", w.name, w.address);
+    //logf("Wedge %s at %02x\n", w.name, w.address);
     if (!w.responsive) {
       log("not responsive, skipping\n");
       continue;
@@ -157,7 +110,7 @@ void scanWedges(SystemMode systemMode) {
     if (w.position >= 0)
       for (int p = 0; p < 8; p++)
         if ( w.data.pointsActivated & (1 << p)) {
-          logf(" point %d : %d set for %s\n", w.position, p, w.name);
+          // logf(" point %d : %d set for %s\n", w.position, p, w.name);
           pointPixels.setPixelColor(w.position * 8 + p, 0x00ff00);
           totalPointSum++;
         } else {
