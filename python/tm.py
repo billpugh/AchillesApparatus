@@ -4,13 +4,26 @@ import time
 from digitalio import DigitalInOut, Direction, Pull
 import random
 
-mag = 50
-red = (mag, 0, 0)           # blink when the tile moves
-white = (mag, mag, mag)     # the tile pattern matches the goal pattern
-blue = (0, 0, mag)          # the tile pattern does NOT match the goal pattern
-yellow = (mag, mag, 0)      # blink before shuffle
-green = (0, mag, 0)         # blink after shuffle
-off = (0, 0, 0)             # no lights
+Dred = (255, 0, 0)
+Dwhite = (255, 255, 255)
+Dblue = (0, 0, 255)
+Dyellow = (255, 255, 0)
+Dgreen = (0, 255, 0)
+off = (0, 0, 0)
+
+brightness = 50
+Nred = (brightness, 0, 0)
+Nwhite = (brightness, brightness, brightness)
+Nblue = (0, 0, brightness)
+Nyellow = (brightness, brightness, 0)
+Ngreen = (0, brightness, 0)
+
+colorMove = Nred             # blink when the tile moves
+colorPattern = Nblue         # the tile pattern matches the goal pattern
+colorMatch = Nwhite          # the tile pattern does NOT match the goal pattern
+colorPreshuffle = Nyellow    # blink before shuffle
+colorPostshuffle = Ngreen    # blink after shuffle
+colorOff = off              # no lights
 
 uplt = [True, False, False, True, True, False]
 uprt = [False, False, True, True, True, False]
@@ -44,174 +57,9 @@ sounds = [
     "MultiHolesFail"
     "HoleJumped"]
 
-# For the tile, set the LEDs to specifed pattern and indicated color
-def showPattern(tile, pattern, color):
-    for index, led in enumerate(pattern):
-        if led:
-            tile[index] = color
-        else:
-            tile[index] = off
-    tile.show()
-
-def playSound(sound):
-    print("Sound: ", sound)
-
-# Print configuration of matrix
-def printPattern(matrix):
-    for r in range(5):
-        for c in range(5):
-            if (matrix[r][c] == blnk):
-                print("    ", end="")
-            if (matrix[r][c] == uplt):
-                print("UL  ", end="")
-            if (matrix[r][c] == uprt):
-                print("UR  ", end="")
-            if (matrix[r][c] == lolt):
-                print("LL  ", end="")
-            if (matrix[r][c] == lort):
-                print("LR  ", end="")
-            if (matrix[r][c] == vert):
-                print("VT  ", end="")
-            if (matrix[r][c] == horz):
-                print("HZ  ", end="")
-        print("")
-    print("")
-
-# count the number of non-blank patterns
-def countNonBlanks(xx):
-    nonBlank = 0
-    for r in range(5):
-        for c in range(5):
-            if xx[r][c] != blnk:
-                nonBlank = nonBlank + 1
-    return nonBlank
-
-# shuffle the maze rep times
-def shuffle(game, reps):
-    nR = 0
-    nC = 0
-    # find a hole
-    for r in range(5):
-        for c in range(5):
-            if game[r][c] == blnk:
-                hR = r
-                hC = c
-            break
-
-    repActual = 0
-    for r in range(reps):
-        d = random.randint(0, 3)
-        # Move down
-        if d == 0:
-            if hR != 0:
-                nR = hR-1
-                nC = hC
-        # Move up
-        elif d == 1:
-            if hR != 4:
-                nR = hR+1
-                nC = hC
-        # Move right
-        elif d == 2:
-            if hC != 0:
-                nR = hR
-                nC = hC-1
-        # Move left
-        else:
-            if hC != 4:
-                nR = hR
-                nC = hC+1
-        if (nR != hR) or (nC != hC):
-            repActual = repActual + 1
-            game[hR][hC] = game[nR][nC]
-            game[nR][nC] = blnk
-            if (game[hR][hR] != blnk):
-                # blink the pattern in the old space
-                showPattern(tiles[nR][nC], game[hR][hC], yellow)
-                time.sleep(0.05)
-                showPattern(tiles[nR][nC], game[hR][hC], off)
-                # blink the patter in the new space
-                showPattern(tiles[hR][hC], game[hR][hC], green)
-                time.sleep(0.05)
-                showPattern(tiles[hR][hC], game[hR][hC], off)
-                playSound("TileMoved")
-            hR = nR
-            hC = nC
-            printPattern(game)
-    # time.sleep(1.0)
-    return hR, hC
-
-# Find the holes. If only one found, return the location
-def findHoles():
-    hR = 0
-    hC = 0
-    hNum = 0
-    for r in range(5):
-        for c in range(5):
-            if sense[r][c].value:
-                hNum = hNum + 1
-                hR = r
-                hC = c
-    return hNum, hR, hC
-
-def moveRows(game, dist, ohR, ohC):
-    # How many tiles moved? Which direction?
-    dir = int(abs(dist)/dist)
-    # slide things up or down the correct distance
-    for r in range(0, abs(dist)):
-        game[ohR+r*dir][ohC] = \
-            game[ohR+(r+1)*dir][ohC]
-        showPattern(
-            tiles[ohR+r*dir][ohC],
-            game[ohR+r*dir][ohC],
-            red)
-        if dir > 0:
-            playSound("TileMovedRowUp")
-        else:
-            playSound("TileMovedRowDn")
-
-def moveCols(game, dist, ohR, ohC):
-    # slide things right or left the correct distance
-    dir = int(abs(dist)/dist)
-    for c in range(0, abs(dist)):
-        game[ohR][ohC+c*dir] = \
-            game[ohR][ohC+(c+1)*dir]
-        showPattern(
-            tiles[ohR][ohC+c*dir],
-            game[ohR][ohC+c*dir],
-            red)
-        if dir > 0:
-            playSound("TileMovedColLt")
-        else:
-            playSound("TileMovedColRt")
-
-# How's it going?
-def matchRealityToGoal(matrix, goal):
-    m = 0
-    p = 0
-    for r in range(5):
-        for c in range(5):
-
-            # count the game pieces
-            if (matrix[r][c] != blnk):
-                p = p + 1
-
-            # do they match?
-            if (matrix[r][c] == goal[r][c]):
-                showPattern(tiles[r][c], matrix[r][c], white)
-
-                # and they are not blank?
-                if (matrix[r][c] != blnk):
-                    m = m + 1
-            else:
-                showPattern(tiles[r][c], matrix[r][c], blue)
-
-    # send back a percentage completion
-    return p, m
-
 # ---------------------------------------------------------------------------
 # Define the tile light strips as a 2D array
-
+# ---------------------------------------------------------------------------
 tiles = [[0 for r in range(5)] for c in range(5)]
 
 tiles[0] = [
@@ -245,9 +93,11 @@ tiles[4] = [
   neopixel.NeoPixel(board.D51, 6, auto_write=False),
   neopixel.NeoPixel(board.D52, 6, auto_write=False)]
 
+# ----------------------------------------------------------
 # Define the edge light strip
 edge = neopixel.NeoPixel(board.D53, 20, auto_write=False)
 
+# -----------------------------------------------------------
 # Define the pull-up inputs that sense if a tile is in place
 sense = [[0 for r in range(5)] for c in range(5)]
 
@@ -277,25 +127,194 @@ sense[4][2] = DigitalInOut(board.D25)
 sense[4][3] = DigitalInOut(board.D26)
 sense[4][4] = DigitalInOut(board.D27)
 
-# For big blue button:
-#  attach D1 to switch post near LED
-#  attach GND to post on back of switch
-
-resetButton = DigitalInOut(board.D1)
-resetButton.direction = Direction.INPUT
-resetButton.pull = Pull.UP
-
-# Define the matrix which tracks the positions of patterns on the board
-matrix = [[0 for r in range(5)] for c in range(5)]
-goal = [[0 for r in range(5)] for c in range(5)]
-
-# Initialize stuff
+# Initialize inputs
 for r in range(5):
     for c in range(5):
         sense[r][c].direction = Direction.INPUT
         sense[r][c].pull = Pull.UP
-        matrix[r][c] = blnk
 
+# ----------------------------------------------------
+# For big blue button:
+#  attach D1 to switch post near LED
+#  attach GND to post on back of switch
+resetButton = DigitalInOut(board.D1)
+resetButton.direction = Direction.INPUT
+resetButton.pull = Pull.UP
+
+# ------------------------------------------------------------------
+# For the tile, set the LEDs to specifed pattern and indicated color
+# ------------------------------------------------------------------
+def showPattern(tile, pattern, color):
+    for index, led in enumerate(pattern):
+        if led:
+            tile[index] = color
+        else:
+            tile[index] = off
+    tile.show()
+
+def playSound(sound):
+    print("Sound: ", sound)
+
+# Print configuration of matrix
+def printPattern(matrix):
+    for r in range(5):
+        for c in range(5):
+            if (matrix[r][c] == blnk):
+                print("    ", end="")
+            if (matrix[r][c] == uplt):
+                print("UL  ", end="")
+            if (matrix[r][c] == uprt):
+                print("UR  ", end="")
+            if (matrix[r][c] == lolt):
+                print("LL  ", end="")
+            if (matrix[r][c] == lort):
+                print("LR  ", end="")
+            if (matrix[r][c] == vert):
+                print("VT  ", end="")
+            if (matrix[r][c] == horz):
+                print("HZ  ", end="")
+        print("")
+    print("")
+
+# --------------------------------------------
+# count the number of non-blank patterns
+def countNonBlanks(game):
+    nonBlank = 0
+    for r in range(5):
+        for c in range(5):
+            if game[r][c] != blnk:
+                nonBlank = nonBlank + 1
+    return nonBlank
+
+# ----------------------------------------------
+# shuffle the maze rep times
+def shuffle(game, reps):
+    nR = 0
+    nC = 0
+    # find a hole
+    for r in range(5):
+        for c in range(5):
+            if game[r][c] == blnk:
+                hR = r
+                hC = c
+            break
+    for r in range(reps):
+        d = random.randint(0, 3)
+        # Move down
+        if d == 0:
+            if hR != 0:
+                nR = hR-1
+                nC = hC
+        # Move up
+        elif d == 1:
+            if hR != 4:
+                nR = hR+1
+                nC = hC
+        # Move right
+        elif d == 2:
+            if hC != 0:
+                nR = hR
+                nC = hC-1
+        # Move left
+        else:
+            if hC != 4:
+                nR = hR
+                nC = hC+1
+        if (nR != hR) or (nC != hC):
+            game[hR][hC] = game[nR][nC]
+            game[nR][nC] = blnk
+            if (game[hR][hR] != blnk):
+
+                # blink the pattern in the old space
+                showPattern(tiles[nR][nC], game[hR][hC], colorPreshuffle)
+                time.sleep(0.1)
+                showPattern(tiles[nR][nC], game[hR][hC], off)
+
+                # blink the pattern in the new space
+                showPattern(tiles[hR][hC], game[hR][hC], colorPostshuffle)
+                time.sleep(0.1)
+                showPattern(tiles[hR][hC], game[hR][hC], off)
+                playSound("TileMoved")
+            hR = nR
+            hC = nC
+            printPattern(game)
+    return hR, hC
+
+# -----------------------------------------------------------
+# Find the holes. Return location of last one found
+def findHoles():
+    hR = 0
+    hC = 0
+    hNum = 0
+    for r in range(5):
+        for c in range(5):
+            if sense[r][c].value:
+                hNum = hNum + 1
+                hR = r
+                hC = c
+    return hNum, hR, hC
+
+# -----------------------------------------------------------
+# Move tiles up and down
+def moveRows(game, dist, ohR, ohC):
+    # How many tiles moved? Which direction?
+    dir = int(abs(dist)/dist)
+    # slide things up or down the correct distance
+    for r in range(0, abs(dist)):
+        game[ohR+r*dir][ohC] = \
+            game[ohR+(r+1)*dir][ohC]
+        showPattern(
+            tiles[ohR+r*dir][ohC],
+            game[ohR+r*dir][ohC],
+            colorMove)
+        if dir > 0:
+            playSound("TileMovedRowUp")
+        else:
+            playSound("TileMovedRowDn")
+
+# ---------------------------------------------------------
+# Move tiles right and left
+def moveCols(game, dist, ohR, ohC):
+    # slide things right or left the correct distance
+    dir = int(abs(dist)/dist)
+    for c in range(0, abs(dist)):
+        game[ohR][ohC+c*dir] = \
+            game[ohR][ohC+(c+1)*dir]
+        showPattern(
+            tiles[ohR][ohC+c*dir],
+            game[ohR][ohC+c*dir],
+            colorMove)
+        if dir > 0:
+            playSound("TileMovedColLt")
+        else:
+            playSound("TileMovedColRt")
+
+# -----------------------------------------------------------
+# How's it going?
+def matchRealityToGoal(game, target):
+    m = 0       # Num matches
+    p = 0       # Num non-blanks
+    for r in range(5):
+        for c in range(5):
+
+            # count the game pieces
+            if (game[r][c] != blnk):
+                p = p + 1
+            # do they match?
+            if (game[r][c] == target[r][c]):
+                showPattern(tiles[r][c], game[r][c], colorMatch)
+                # and they are not blank?
+                if (game[r][c] != blnk):
+                    m = m + 1
+            else:
+                showPattern(tiles[r][c], game[r][c], colorPattern)
+
+    # send back a percentage completion
+    return p, m
+
+# -----------------------------------------------------------
+# Setup mazes
+goal = [[0 for r in range(5)] for c in range(5)]
 goal[0][0] = blnk
 goal[0][1] = lort
 goal[0][2] = lolt
@@ -325,8 +344,9 @@ goalBegin = 3
 goalEnd = 18
 goalComplexity = countNonBlanks(goal)
 
+# ----------------------------------------
 # Define misc stuff
-
+# ----------------------------------------
 countMultiHoles = 0
 countMultiHolesLimit = 1_000
 
@@ -338,17 +358,23 @@ newHoleCol = 0
 rdist = 0
 cdist = 0
 pieces = 0
-match = 0
+matches = 0
+progress = 0.0
 
-shuffleReps = 100
+shuffleReps = 5
 
-# Loop per game
+# Define the matrix which tracks the positions of patterns on the board
+matrix = [[0 for r in range(5)] for c in range(5)]
+
+# -----------------------------------------------------------
+# Main loop, eventually
+# -----------------------------------------------------------
 
 # copy goal to matrix
 for r in range(5):
     for c in range(5):
         matrix[r][c] = goal[r][c]
-        
+
 oldHoleRow, oldHoleCol = shuffle(matrix, shuffleReps)
 pieces, match = matchRealityToGoal(matrix, goal)
 print("Matrix")
@@ -357,12 +383,12 @@ print("Goal")
 printPattern(goal)
 
 # ----------------------------------------------------------
-# Main loop
+# Play loop
 # ----------------------------------------------------------
 while True:
 
     # look for physical holes in the game table
-    numHoles, newHoleRow, newHoleCol = findHoles()3
+    numHoles, newHoleRow, newHoleCol = findHoles()
     # +++++++ do it manually for now
     print("Old: ", oldHoleRow, ",", oldHoleCol)
     numHoles = 1
@@ -403,14 +429,18 @@ while True:
     printPattern(matrix)
     print("goal")
     printPattern(goal)
-    pieces, match = matchRealityToGoal(matrix, goal)
-    print("Progress: ", match, "out of", pieces)
+    pieces, matches = matchRealityToGoal(matrix, goal)
+    print("Progress: ", matches, "out of", pieces)
 
-    if (match == pieces):
+    progress = matches/pieces
+    if (matches == pieces):
         playSound("Solved")
-
-
-#    if sense[1][1].value:
-#        showPattern(tiles[0][0], vert, red)
-#    else:
-#        showPattern(tiles[0][0], horz, blue)
+    elif progress > 0.9:
+        playSound("Progress90")
+    elif progress > 0.75:
+        playSound("Progress75")
+    elif progress > 0.5:
+        playSound("Progress50")
+    elif progress > 0.25:
+        playSound("Progress25")
+        
