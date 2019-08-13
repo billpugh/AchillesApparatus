@@ -50,6 +50,7 @@ int rpm;
 int direction;
 int prevDirection;
 unsigned long lastRPMUpdate = 0;
+unsigned long lastHotspotMessage;
 void measure() {
   prevDirection = direction;
   int h0 = getReading(A0);
@@ -99,11 +100,15 @@ void measure() {
         if (detail) log("Starting hotspot\n");
         startedHotspot =  now;
         hotspotStartSound();
+        lastHotspotMessage = now;
 
       } else if (hotspotWinddown()) {
         hotspotResumeSound();
         hotspotWinddownStarted = false;
         if (detail) log("Restarting hotspot\n");
+      } else if (lastHotspotMessage + 1000 < now) {
+        logf("Over hotspot for %d ms\n", now-startedHotspot);
+        lastHotspotMessage = now;
       }
       lastSawHotspot = now;
     }

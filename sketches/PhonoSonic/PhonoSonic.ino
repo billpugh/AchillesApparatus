@@ -12,13 +12,17 @@ void setup() {
   while (!Serial) delay(10);
   Serial.println("PhotoSonic demo");
   logf("Compiled %s, %s\n", F(__DATE__), F(__TIME__));
+  log("initializing tubes");
   initializeTubes();
+  log("initializing sound effects");
   initializeSoundEffects();
 
 }
 
 
 void loop() {
+  Serial.println(millis());
   measure();
   updateSoundEffects();
+  delay(40);
 }

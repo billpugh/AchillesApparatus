@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include "AchillesCentral.h"
 #include "AchillesLog.h"
+#include "sound.h"
 #include <Wire.h>
 #include "RTClib.h"
 
@@ -105,10 +106,13 @@ void updateCentralData(SystemMode systemMode) {
   }
 }
 
+unsigned long nextScanReport = 1000;
 
 void scanWedges(SystemMode systemMode) {
+  unsigned long microNow = micros();
   int totalPointSum = 0;
   updateCentralData(systemMode);
+  int scannedWedges = 0;
   for (int i = 0; i < numWedges; i++) {
     WedgeData& w = wedges[i];
     logf("Wedge %s at %02x\n", w.name, w.address);
@@ -139,7 +143,12 @@ void scanWedges(SystemMode systemMode) {
            w.name);
       continue;
     }
-    Wire.readBytes((uint8_t*)&w.data, sizeof(w.data)); // copy Rx data to databuf
+    bytesRead = Wire.readBytes((uint8_t*)&w.data, sizeof(w.data)); // copy Rx data to databuf
+    if (bytesRead !=  sizeof(w.data)) {
+      logf("Got %d rather than %d bytes when calling readBytes on %s\n", bytesRead, sizeof(FromWidgetData),
+           w.name);
+      continue;
+    }
 #ifdef  ACHILLES_PACKET_DEBUG
     if (w.data.packetAck !=  centralData.packetNum)
       logf(" got ack of %d rather than %d from %s\n",
@@ -154,7 +163,19 @@ void scanWedges(SystemMode systemMode) {
         } else {
           pointPixels.setPixelColor(w.position * 8 + p, 0);
         }
+    if (w.data.playThisTrack != 0)
+      playSound(w);
+    scannedWedges++;
+  }
+  unsigned long microDuration = micros() - microNow;
+  unsigned long now = millis();
+  if (now > nextScanReport) {
+    logf("Scanned %d out of %d wedges, requiring %d microseconds\n",
+         scannedWedges, numWedges, microDuration);
+    nextScanReport = now + 5000;
   }
   pointPixels.show();
+
   totalPoints = totalPointSum;
+
 }

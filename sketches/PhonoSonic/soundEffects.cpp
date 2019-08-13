@@ -153,8 +153,6 @@ void updateSoundEffects() {
 
     }
   }
-  delay(40);
-
 }
 
 void hotspotShutdownSound() {

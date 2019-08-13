@@ -4,7 +4,17 @@
 Servo tubeServo;
 #include "AchillesLog.h"
 
-const uint8_t servo_pin = 23;
+// inner most to outer most
+const uint8_t red_led_pin = 9;
+const uint8_t yellow_led_pin = 10;
+const uint8_t green_led_pin = 6;
+
+
+class EnergyTube {
+  unsigned long lastPower = 0;
+};
+
+const uint8_t servo_pin = 5;
 
 const uint16_t minMicros = 1080;
 
@@ -19,7 +29,15 @@ unsigned int tubePeriod = 2000;
 void initializeTubes() {
   tubeServo.attach(servo_pin, minMicros, maxMicros);
   tubeServo.writeMicroseconds(maxMicros);
+  pinMode(red_led_pin, OUTPUT);
+  digitalWrite(red_led_pin, LOW);
+  pinMode(yellow_led_pin, OUTPUT);
+  digitalWrite(yellow_led_pin, LOW);
+  pinMode(green_led_pin, OUTPUT);
+  digitalWrite(green_led_pin, LOW);
 }
+
+void setLEDLevels(uint8_t red, uint8_t yellow, uint8_t green);
 bool tubeOff() {
   return tubeAmplitude < 0.01;
 }
@@ -43,7 +61,7 @@ void setTubeAmplitude(float amplitude) {
     tubeServo.writeMicroseconds(maxMicros);
 }
 
-// 
+//
 void updateTubes() {
   if (tubeOff()) return;
   unsigned long now = millis();
