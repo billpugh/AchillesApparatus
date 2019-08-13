@@ -13,7 +13,7 @@ struct __attribute__ ((packed)) FromWidgetData {
   uint16_t secondsSinceBoot;
   uint16_t secondsSinceActivity;
 
-  // Number of file for this request; 0 is silence (duration ignored)
+  // If non-zero, request that this track be played 
   uint16_t playThisTrack = 0;
   bool playGlobal = false;
 
@@ -86,7 +86,6 @@ struct __attribute__ ((packed)) ToWidgetData {
   SystemMode systemMode = NOT_RECEIVED;
   Daytime daytime = UNKNOWN_SUNLIGHT;
   int8_t lightLevel = -2; // -4 = nighttime, 0 = daytime
-
 };
 
 #endif
