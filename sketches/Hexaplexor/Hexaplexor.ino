@@ -207,6 +207,9 @@ void setup() {
   resetFlag = true;
 }
 
+unsigned long lastCommComplaint = 0;
+unsigned long lastStatusReport = 0;
+
 void loop() {
   byte i;
   byte mode = READ_BUTTONS_MODE;
@@ -214,10 +217,18 @@ void loop() {
   int ss;
   int dist;
   int pos;
+  
+  unsigned long now = millis();
 
-  if (receivedMsg && lastMessageReported != lastMsgReceivedAt) {
-    logf("Received message at %d\n", lastMsgReceivedAt);
-    lastMessageReported = lastMsgReceivedAt;
+  if (!commOK() && now > 2000 &&  now - 2000 > lastCommComplaint) {
+    lastCommComplaint = now;
+    logf("Comm not working at %d\n", now);
+  }
+  if (commOK() && now > 5000 &&  now - 5000 > lastStatusReport) {
+    lastStatusReport = now;
+    logf("System mode: %s\n", systemModeName(getSystemMode()));
+    logf("Daytime : %s\n", daytimeName(getDaytime()));
+    logf("Light level : %d\n", getLightLevel());
   }
 
   for (i=0; i<NUM_SERVOS; ++i) {
@@ -261,7 +272,7 @@ void loop() {
     
     if (resetFlag) {
       difficulty = 2;
-      fromWidgetData.pointsActivated = 0;
+      clearAllPoints();
       resetPuzzle(false);
       lastInteraction = millis();
       resetFlag = false;
@@ -272,19 +283,19 @@ void loop() {
       if (checkPuzzleSolved()) {
         if (difficulty == 2) {
           difficulty = 3;
-          fromWidgetData.pointsActivated = 1;
+          setPointTo(1);
           playSound(WIN_1_SOUND, true);
           resetPuzzle(true);
           
         } else if (difficulty == 3) {
           difficulty = 6;
-          fromWidgetData.pointsActivated = 15;
+          setPointTo(15);
           playSound(WIN_2_SOUND, true);
           resetPuzzle(true);
           
         } else if (difficulty == 6) {
           difficulty = 2;
-          fromWidgetData.pointsActivated = 255;
+          setPointTo(255);
           playSound(WIN_3_SOUND, true);
           resetPuzzle(true);
         }
