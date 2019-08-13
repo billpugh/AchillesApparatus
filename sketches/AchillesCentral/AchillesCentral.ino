@@ -3,6 +3,7 @@
 
 #include "AchillesCentral.h"
 #include "AchillesLog.h"
+#include "sound.h"
 
 WedgeData wedges[] = {
   //WedgeData("TestWedge", 0x71, 0),
@@ -21,15 +22,18 @@ void setup() {
   delay(1000);
   logf("Achilles Central, compiled %s, %s\n",
        F(__DATE__), F(__TIME__));
-
+  int countdownMS = Watchdog.enable(14000);
+  logf("Enabled the watchdog with max countdown of %d ms\n", countdownMS);
   initializeCentral();
+  initializeSound();
 
 }
 
 void loop() {
-
+  Watchdog.reset();
   lastActivity = millis();
   scanWedges(ACTIVE);
-  delay(1000);
+  updateSound();
+  delay(50);
 
 }
