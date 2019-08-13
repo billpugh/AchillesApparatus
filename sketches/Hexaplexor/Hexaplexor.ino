@@ -17,11 +17,11 @@
 #define RESET_TIME         120
 #define SCRAMBLES            5
 
-#define RESET_SOUND          0
-#define GEAR_SOUND           1
-#define WIN_1_SOUND          2
-#define WIN_2_SOUND          3
-#define WIN_3_SOUND          4
+#define RESET_SOUND          1
+#define GEAR_SOUND           2
+#define WIN_1_SOUND          3
+#define WIN_2_SOUND          4
+#define WIN_3_SOUND          5
 
 Servo servo[NUM_SERVOS];
 
@@ -306,4 +306,3 @@ void loop() {
     }
   }
 }
-
