@@ -115,7 +115,7 @@ bool getPoint(int p) {
 void clearAllPoints() {
   fromWidgetData.pointsActivated = 0;
 }
-void setPointVector(uint8_t bitvector) {
+void setPointBits(uint8_t bitvector) {
   fromWidgetData.pointsActivated  = bitvector;
 }
 
