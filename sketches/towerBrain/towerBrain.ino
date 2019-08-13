@@ -10,10 +10,11 @@ void setup() {
   while (!Serial) delay(5);
   log("Tower brain");
   logf("Compiled %s, %s\n", F(__DATE__), F(__TIME__));
-  setupAnimations();
-  logf("number of opc files: %d\n", numberOfOPCFiles);
   int countdownMS = Watchdog.enable(14000);
   logf("Enabled the watchdog with max countdown of %d ms\n", countdownMS);
+  setupAnimations();
+  logf("number of opc files: %d\n", numberOfOPCFiles);
+ ;
 }
 
 
