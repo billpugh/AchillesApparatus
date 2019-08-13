@@ -138,19 +138,52 @@ def shuffle(game, reps):
             hR = nR
             hC = nC
             printPattern(game)
-    #time.sleep(1.0)
+    # time.sleep(1.0)
     return hR, hC
 
 # Find the holes. If only one found, return the location
-def findHoles(holeCount, holeRow, holeCol):
-    x = 0
+def findHoles():
+    hR = 0
+    hC = 0
+    hNum = 0
     for r in range(5):
         for c in range(5):
             if sense[r][c].value:
-                x = x + 1
-                holeRow = r
-                holeCol = c
-    holeCount = x
+                hNum = hNum + 1
+                hR = r
+                hC = c
+    return hNum, hR, hC
+
+def moveRows(game, dist, ohR, ohC):
+    # How many tiles moved? Which direction?
+    dir = int(abs(dist)/dist)
+    # slide things up or down the correct distance
+    for r in range(0, abs(dist)):
+        game[ohR+r*dir][ohC] = \
+            game[ohR+(r+1)*dir][ohC]
+        showPattern(
+            tiles[ohR+r*dir][ohC],
+            game[ohR+r*dir][ohC],
+            red)
+        if dir > 0:
+            playSound("TileMovedRowUp")
+        else:
+            playSound("TileMovedRowDn")
+
+def moveCols(game, dist, ohR, ohC):
+    # slide things right or left the correct distance
+    dir = int(abs(dist)/dist)
+    for c in range(0, abs(dist)):
+        game[ohR][ohC+c*dir] = \
+            game[ohR][ohC+(c+1)*dir]
+        showPattern(
+            tiles[ohR][ohC+c*dir],
+            game[ohR][ohC+c*dir],
+            red)
+        if dir > 0:
+            playSound("TileMovedColLt")
+        else:
+            playSound("TileMovedColRt")
 
 # How's it going?
 def matchRealityToGoal(matrix, goal):
@@ -310,13 +343,12 @@ match = 0
 shuffleReps = 100
 
 # Loop per game
+
+# copy goal to matrix
 for r in range(5):
     for c in range(5):
-
-
         matrix[r][c] = goal[r][c]
-
-
+        
 oldHoleRow, oldHoleCol = shuffle(matrix, shuffleReps)
 pieces, match = matchRealityToGoal(matrix, goal)
 print("Matrix")
@@ -330,7 +362,7 @@ printPattern(goal)
 while True:
 
     # look for physical holes in the game table
-    # findHoles(numHoles, newHoleRow, newHoleCol)
+    numHoles, newHoleRow, newHoleCol = findHoles()3
     # +++++++ do it manually for now
     print("Old: ", oldHoleRow, ",", oldHoleCol)
     numHoles = 1
@@ -356,37 +388,10 @@ while True:
             if (rdist != 0) and (cdist != 0):
                 playSound("HoleJumped")
             if rdist != 0:
-                # How many tiles moved? Which direction?
-                rdir = int(abs(rdist)/rdist)
-                # slide things up or down the correct distance
-                for r in range(0, abs(rdist)):
-                    matrix[oldHoleRow+r*rdir][oldHoleCol] = \
-                        matrix[oldHoleRow+(r+1)*rdir][oldHoleCol]
-                    showPattern(
-                        tiles[oldHoleRow+r*rdir][oldHoleCol],
-                        matrix[oldHoleRow+r*rdir][oldHoleCol],
-                        red)
-                    if rdir > 0:
-                        playSound("TileMovedRowUp")
-                    else:
-                        playSound("TileMovedRowDn")
+                moveRows(matrix, rdist, oldHoleRow, oldHoleCol)
             else:  # must be cdist > 0
-                # slide things right or left the correct distance
-                cdir = int(abs(cdist)/cdist)
-                for c in range(0, abs(cdist)):
-                    matrix[oldHoleRow][oldHoleCol+c*cdir] = \
-                        matrix[oldHoleRow][oldHoleCol+(c+1)*cdir]
-                    showPattern(
-                        tiles[oldHoleRow][oldHoleCol+c*cdir],
-                        matrix[oldHoleRow][oldHoleCol+c*cdir],
-                        red)
-                    if cdir > 0:
-                        playSound("TileMovedColLt")
-                    else:
-                        playSound("TileMovedColRt")
+                moveCols(matrix, cdist, oldHoleRow, oldHoleCol)
             matrix[newHoleRow][newHoleCol] = blnk
-            time.sleep(0.25)
-
             showPattern(
                 tiles[newHoleRow][newHoleCol],
                 matrix[newHoleRow][newHoleCol],
