@@ -100,7 +100,7 @@ int mainTrackLevel() {
 }
 
 void directionChangeSound() {
-  logf("direction changed: %d -> %d %3d\n", prevDirection, direction, rpm);
+  aalogf("direction changed: %d -> %d %3d\n", prevDirection, direction, rpm);
   if (direction == 0) {
     tsunami.trackFade(mainTrack, -70, 3000, false);
     tsunami.trackFade(3, -70, 6000, false);
@@ -118,7 +118,7 @@ int currentSampleRateOffset = 0;
 
 void updateSoundEffects() {
   unsigned long now = millis();
-  //logf("direction %d, rpm %d\n", direction, rpm);
+  //aalogf("direction %d, rpm %d\n", direction, rpm);
   if (direction == 0 || rpm == 0) {
     currentSampleRateOffset = 0;
     return;
@@ -135,7 +135,7 @@ void updateSoundEffects() {
         currentSampleRateOffset = min(currentSampleRateOffset + 500, targetRateOffset);
       else if (currentSampleRateOffset > targetRateOffset)
         currentSampleRateOffset = max(currentSampleRateOffset - 500, targetRateOffset);
-      // logf("sample rate %d\n", currentSampleRateOffset);
+      // aalogf("sample rate %d\n", currentSampleRateOffset);
       tsunami.samplerateOffset(OUTPUT_CHANNEL, currentSampleRateOffset);
     }
   }

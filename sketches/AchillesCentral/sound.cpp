@@ -20,7 +20,7 @@ void tsunamiReset(Tsunami &t) {
   delay(10);
 
   int num = t.getNumTracks();
-  logf("num tracks: %d\n", num);
+  aalogf("num tracks: %d\n", num);
   for (int i = 0; i < TSUNAMI_NUM_OUTPUTS; i++) {
     t.samplerateOffset(i, 0);
     t.masterGain(i, 0);
@@ -65,14 +65,14 @@ void playSound(const WedgeData & w) {
   int track = getFileNum(w.data.playThisTrack, w.id);
 
   if (!w.data.playGlobal) {
-    logf("playing track %d on position %d\n", track, w.position);
+    aalogf("playing track %d on position %d\n", track, w.position);
 
     if (!soundReady) return;
     resetTrack(panelTsunami,  track);
     panelTsunami.trackPlayPoly(track, w.position, true);
     lastTrackPlayedOnPanel[w.position] = track;
   } else {
-    logf("playing track %d on global %d\n", track);
+    aalogf("playing track %d on global %d\n", track);
 
     if (!soundReady) return;
     //    int speaker = 0;
