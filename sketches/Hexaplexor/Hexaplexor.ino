@@ -173,7 +173,7 @@ void triggerWheels(byte index) {
 bool checkPuzzleSolved() {
   return (wheelState[0] == 0 && wheelState[1] == 0 && \
           wheelState[2] == 0 && wheelState[3] == 0 && \
-          wheelState[4] == 0 && wheelState[4] == 0);
+          wheelState[4] == 0 && wheelState[5] == 0);
 }
 
 void setup() {
@@ -283,19 +283,19 @@ void loop() {
       if (checkPuzzleSolved()) {
         if (difficulty == 2) {
           difficulty = 3;
-          setPointTo(1);
+          setPointBits(1);
           playSound(WIN_1_SOUND, true);
           resetPuzzle(true);
           
         } else if (difficulty == 3) {
           difficulty = 6;
-          setPointTo(15);
+          setPointBits(15);
           playSound(WIN_2_SOUND, true);
           resetPuzzle(true);
           
         } else if (difficulty == 6) {
           difficulty = 2;
-          setPointTo(255);
+          setPointBits(255);
           playSound(WIN_3_SOUND, true);
           resetPuzzle(true);
         }

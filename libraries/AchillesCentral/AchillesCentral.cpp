@@ -16,13 +16,13 @@ boolean rtcWorking = true;
 void checkWedges() {
   for (int i = 0; i < numWedges; i++) {
     WedgeData& w = wedges[i];
-    logf("Checking %s at %02x\n", w.name, w.address);
+    aalogf("Checking %s at %02x\n", w.name, w.address);
     Wire.beginTransmission(w.address);
     int error = Wire.endTransmission();
     if (error == 0)
-      log(" found\n");
+      aalog(" found\n");
     else {
-      logf(" got error %d\n", error);
+      aalogf(" got error %d\n", error);
       //w.responsive = false;
     }
 
@@ -42,7 +42,7 @@ void initializeCentral() {
     rtcWorking = false;
   }
   DateTime now = rtc.now();
-  logf("Time is %02d:%02d:%02d\n", now.hour(), now.minute(), now.second());
+  aalogf("Time is %02d:%02d:%02d\n", now.hour(), now.minute(), now.second());
   checkWedges();
   for (int i = 0; i < 8; i++)
     pointPixels.setPixelColor(i, 0);
@@ -115,15 +115,15 @@ void scanWedges(SystemMode systemMode) {
   int scannedWedges = 0;
   for (int i = 0; i < numWedges; i++) {
     WedgeData& w = wedges[i];
-    logf("Wedge %s at %02x\n", w.name, w.address);
+    aalogf("Wedge %s at %02x\n", w.name, w.address);
     if (!w.responsive) {
-      log("not responsive, skipping\n");
+      aalog("not responsive, skipping\n");
       continue;
     }
     size_t sendSize = sizeof(ToWidgetData);
 #ifdef  ACHILLES_PACKET_DEBUG
     centralData.packetAck = w.data.packetNum;
-    logf("Writing package %d, last ack %d, size %d\n",
+    aalogf("Writing package %d, last ack %d, size %d\n",
          centralData.packetNum,  centralData.packetAck, sendSize);
 #endif
 
@@ -131,33 +131,33 @@ void scanWedges(SystemMode systemMode) {
     int written = Wire.write((uint8_t *)&centralData, sendSize);
     int error = Wire.endTransmission();
     if (written !=  sendSize)
-      logf("Wrote %d bytes, expecting %d\n", written, sendSize);
+      aalogf("Wrote %d bytes, expecting %d\n", written, sendSize);
     if (error != 0) {
-      logf("Got error %d writing to %s\n", error, w.name);
+      aalogf("Got error %d writing to %s\n", error, w.name);
       continue;
     }
 
     int bytesRead = Wire.requestFrom(w.address, sizeof(w.data));
     if (bytesRead !=  sizeof(w.data)) {
-      logf("Got %d rather than %d bytes when reading from %s\n", bytesRead, sizeof(FromWidgetData),
+      aalogf("Got %d rather than %d bytes when reading from %s\n", bytesRead, sizeof(FromWidgetData),
            w.name);
       continue;
     }
     bytesRead = Wire.readBytes((uint8_t*)&w.data, sizeof(w.data)); // copy Rx data to databuf
     if (bytesRead !=  sizeof(w.data)) {
-      logf("Got %d rather than %d bytes when calling readBytes on %s\n", bytesRead, sizeof(FromWidgetData),
+      aalogf("Got %d rather than %d bytes when calling readBytes on %s\n", bytesRead, sizeof(FromWidgetData),
            w.name);
       continue;
     }
 #ifdef  ACHILLES_PACKET_DEBUG
     if (w.data.packetAck !=  centralData.packetNum)
-      logf(" got ack of %d rather than %d from %s\n",
+      aalogf(" got ack of %d rather than %d from %s\n",
            w.data.packetAck,  centralData.packetNum, w.name);
 #endif
     if (w.position >= 0)
       for (int p = 0; p < 8; p++)
         if ( w.data.pointsActivated & (1 << p)) {
-          logf(" point %d : %d set for %s\n", w.position, p, w.name);
+          aalogf(" point %d : %d set for %s\n", w.position, p, w.name);
           pointPixels.setPixelColor(w.position * 8 + p, 0x00ff00);
           totalPointSum++;
         } else {
@@ -170,7 +170,7 @@ void scanWedges(SystemMode systemMode) {
   unsigned long microDuration = micros() - microNow;
   unsigned long now = millis();
   if (now > nextScanReport) {
-    logf("Scanned %d out of %d wedges, requiring %d microseconds\n",
+    aalogf("Scanned %d out of %d wedges, requiring %d microseconds\n",
          scannedWedges, numWedges, microDuration);
     nextScanReport = now + 5000;
   }
