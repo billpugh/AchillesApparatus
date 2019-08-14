@@ -4,12 +4,12 @@
 #include <stdarg.h>
 #include "Print.h"
 
-void log(const char *s) {
+void aalog(const char *s) {
   Serial.print(s);
 }
 
 const int maxLength = 500;
-void logf( const char *fmt, ... ) {
+void aalogf( const char *fmt, ... ) {
   char buf[maxLength]; 
   va_list args;
   va_start (args, fmt );

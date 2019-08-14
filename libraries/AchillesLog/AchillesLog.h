@@ -1,6 +1,6 @@
 
 
-void log( const char *s);
-void logf( const char *fmt, ... );
+void aalog( const char *s);
+void aalogf( const char *fmt, ... );
 
  

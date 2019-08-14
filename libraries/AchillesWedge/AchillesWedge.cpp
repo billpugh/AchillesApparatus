@@ -90,7 +90,7 @@ unsigned long millisSinceLastMessageReceived() {
 
 inline uint8_t pointToBit(int p) {
   if (p < 0 || p > 7) {
-    logf("being asked access point %d\n", p);
+    aalogf("being asked access point %d\n", p);
     return 0;
   }
   return 1 << p;
@@ -137,7 +137,7 @@ void processToWidgetData() {
 
 #ifdef ACHILLES_PACKET
   if (toWidgetData.packetAck != lastPacketSent)
-    logf("Last packet sent %d, last packet acknowledged %d\n", lastPacketSent, toWidgetData.packetAck);
+    aalogf("Last packet sent %d, last packet acknowledged %d\n", lastPacketSent, toWidgetData.packetAck);
 #endif
   //toWidgetData.secondsSinceBoot;
   //toWidgetData.secondsSinceActivity;
@@ -149,15 +149,15 @@ unsigned long lastActivityAt = 0;
 void setupComm(int wedgeAddress) {
 
 #if defined(__arm__) && defined(CORE_TEENSY)
-  log("setting up i2c on Teensy\n");
+  aalog("setting up i2c on Teensy\n");
   // Setup for Slave mode, address 0x44, pins 18/19, external pullups, 400kHz
   Wire.begin(I2C_SLAVE, wedgeAddress, I2C_PINS_18_19, I2C_PULLUP_EXT, I2C_RATE_400);
   Wire.setDefaultTimeout(100); // 100 usecs timeout
 #else
-  log("setting up i2c on non-Teensy\n");
+  aalog("setting up i2c on non-Teensy\n");
   Wire.begin(wedgeAddress);
 #endif
-  logf("i2c Slave address: 0x%02x\n", wedgeAddress);
+  aalogf("i2c Slave address: 0x%02x\n", wedgeAddress);
   // init vars
 
   // register events
@@ -173,7 +173,7 @@ void setupComm(int wedgeAddress) {
 void receiveEvent(receive_arg_type len)
 {
   if (len != sizeof(toWidgetData)) {
-    logf("Received i2c msg of length %d, rather than %d\n", len, sizeof(toWidgetData));
+    aalogf("Received i2c msg of length %d, rather than %d\n", len, sizeof(toWidgetData));
     return;
   }
 
@@ -196,7 +196,7 @@ uint16_t secondsBetween(unsigned long start, unsigned long end) {
 //
 void requestEvent(void)
 {
-  logf("requestEvent, writing %d bytes\n", sizeof(FromWidgetData));
+  aalogf("requestEvent, writing %d bytes\n", sizeof(FromWidgetData));
   populateFromWidgetData();
   uint8_t * p = (uint8_t *)&fromWidgetData;
   Wire.write(p, sizeof(FromWidgetData));
