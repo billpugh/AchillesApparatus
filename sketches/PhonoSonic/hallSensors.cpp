@@ -80,7 +80,7 @@ void measure() {
   if (hallValue == 0) {
     wasZero = true;
     if (now > lastRPMUpdate + 2000 && direction != 0) {
-      log("Haven't seen any RPM updates\n");
+      aalog("Haven't seen any RPM updates\n");
       direction = 0;
       rpm = 0;
       directionChangeSound();
@@ -94,10 +94,10 @@ void measure() {
     const bool detail = true;
 
     if (abs3 > hallAbs / 3 + 2) {
-      if (detail && false) log("tone arm over hot spot\n");
+      if (detail && false) aalog("tone arm over hot spot\n");
 
       if (startedHotspot == 0) {
-        if (detail) log("Starting hotspot\n");
+        if (detail) aalog("Starting hotspot\n");
         startedHotspot =  now;
         hotspotStartSound();
         lastHotspotMessage = now;
@@ -105,9 +105,9 @@ void measure() {
       } else if (hotspotWinddown()) {
         hotspotResumeSound();
         hotspotWinddownStarted = false;
-        if (detail) log("Restarting hotspot\n");
+        if (detail) aalog("Restarting hotspot\n");
       } else if (lastHotspotMessage + 1000 < now) {
-        logf("Over hotspot for %d ms\n", now-startedHotspot);
+        aalogf("Over hotspot for %d ms\n", now-startedHotspot);
         lastHotspotMessage = now;
       }
       lastSawHotspot = now;
@@ -120,7 +120,7 @@ void measure() {
           startThreePosSensor = now;
       }
       if (now > lastRPMUpdate + 2000 && direction != 0) {
-        log("Haven't seen any RPM updates\n");
+        aalog("Haven't seen any RPM updates\n");
         direction = 0;
         rpm = 0;
         directionChangeSound();
@@ -133,8 +133,8 @@ void measure() {
       if (currHallSensor == 2 && currHallSign == 1) {
         int diff = now - startThreePosSensor;
         if (diff > 0) {
-          logf("\n%3d %3d ", 0, 60000 / diff);
-          if (detail) log("\n");
+          aalogf("\n%3d %3d ", 0, 60000 / diff);
+          if (detail) aalog("\n");
         }
         startThreePosSensor = now;
       }
@@ -148,12 +148,12 @@ void measure() {
       int diff = (startCurrSensor - startPrevSensor);
       if (prevHallSensor != -1 && diff > 50) {
 
-        if (detail) logf("moving from %d,%d -> %d,%d, %d ms\n",
+        if (detail) aalogf("moving from %d,%d -> %d,%d, %d ms\n",
                            prevHallSensor, prevHallSign, currHallSensor, currHallSign, diff);
         if (prevHallSensor != currHallSensor && currHallSign == prevHallSign) {
-          logf("Fuck: %d, %d -> %d, %d\n",
+          aalogf("Fuck: %d, %d -> %d, %d\n",
                prevHallSensor, prevHallSign, currHallSensor, currHallSign);
-          logf("      %3d, %3d, %3d\n",   analogRead(A0) - 325, analogRead(A1) - 325, analogRead(A2) - 325);
+          aalogf("      %3d, %3d, %3d\n",   analogRead(A0) - 325, analogRead(A1) - 325, analogRead(A2) - 325);
         } else {
           // ms to perform one rotation = angle * diff
           // RPM = 60000 / (ms to perform one rotation)
@@ -184,15 +184,15 @@ void measure() {
           rpm = constrain(60000 * sectorDiff / 160 / diff, 0, 60);
           if (rpm < 3) {
 
-            logf("Moving too slowly\: %3d %4d\n", sectorDiff, diff );
+            aalogf("Moving too slowly\: %3d %4d\n", sectorDiff, diff );
             direction = 0;
             rpm = 0;
           }
           if (prevDirection != direction)
             directionChangeSound();
-          if (detail) logf("%3d ", (1 + currHallSensor)*currHallSign);
-          logf("%d %3d ", direction, rpm);
-          log("\n");
+          if (detail) aalogf("%3d ", (1 + currHallSensor)*currHallSign);
+          aalogf("%d %3d ", direction, rpm);
+          aalog("\n");
         }
       }
 
@@ -200,13 +200,13 @@ void measure() {
     wasZero = false;
   }
   if (hotspotShutdown()) {
-    log("hotspot shutdown\n");
+    aalog("hotspot shutdown\n");
     startedHotspot = 0;
     hotspotWinddownStarted = false;
     hotspotShutdownSound();
   } else if (hotspotWinddown()) {
     if (!hotspotWinddownStarted) {
-      log("hotspot winddown\n");
+      aalog("hotspot winddown\n");
       hotspotWinddownStarted = true;
       hotspotWinddownSound();
     }

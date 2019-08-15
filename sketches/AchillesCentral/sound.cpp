@@ -1,14 +1,29 @@
 #include <Arduino.h>
 
+#include "sound.h"
+
+#ifdef SKIP_SOUND
+
+bool soundReady;
+
+void initializeSound() {}
+
+void playSound(const WedgeData &w) {}
+void updateSound() {}
+
+#else
+
 #include <Tsunami.h>
+
 #include "pinkNoise.h"
 #include "AchillesLog.h"
 #include "AchillesCentral.h"
 
 Tsunami panelTsunami(Serial1);
-Tsunami mainTsunami(Serial2);
+//Tsunami mainTsunami(Serial2);
 
 
+bool soundReady = false;
 int lastTrackPlayedOnPanel[TSUNAMI_NUM_OUTPUTS];
 
 int lastTrackPlayedOnMain[TSUNAMI_NUM_OUTPUTS];
@@ -19,7 +34,7 @@ void tsunamiReset(Tsunami &t) {
   delay(10);
 
   int num = t.getNumTracks();
-  logf("num tracks: %d\n", num);
+  aalogf("num tracks: %d\n", num);
   for (int i = 0; i < TSUNAMI_NUM_OUTPUTS; i++) {
     t.samplerateOffset(i, 0);
     t.masterGain(i, 0);
@@ -32,13 +47,15 @@ void tsunamiReset(Tsunami &t) {
 }
 
 void initializeSound() {
+  soundReady = true;
   for (int i = 0; i < TSUNAMI_NUM_OUTPUTS; i++) {
     lastTrackPlayedOnPanel[i] = 0;
     lastTrackPlayedOnMain[i] = 0;
   }
 
+
   tsunamiReset(panelTsunami);
-  tsunamiReset(mainTsunami);
+  // tsunamiReset(mainTsunami);
 }
 
 int getFileNum(int track, int wedgeId) {
@@ -62,14 +79,22 @@ void playSound(const WedgeData & w) {
   int track = getFileNum(w.data.playThisTrack, w.id);
 
   if (!w.data.playGlobal) {
+    aalogf("playing track %d on position %d\n", track, w.position);
+
+    if (!soundReady) return;
     resetTrack(panelTsunami,  track);
     panelTsunami.trackPlayPoly(track, w.position, true);
     lastTrackPlayedOnPanel[w.position] = track;
   } else {
-    int speaker = 0;
-    resetTrack(mainTsunami,  track);
-    mainTsunami.trackPlayPoly(track, speaker, true);
-    lastTrackPlayedOnPanel[speaker] = track;
+    aalogf("playing track %d on global %d\n", track);
+
+    if (!soundReady) return;
+    //    int speaker = 0;
+    //    resetTrack(mainTsunami,  track);
+    //    mainTsunami.trackPlayPoly(track, speaker, true);
+    //    lastTrackPlayedOnPanel[speaker] = track;
   }
 
 }
+
+#endif
