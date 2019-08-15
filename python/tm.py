@@ -1,8 +1,10 @@
-import board
-import neopixel
 import time
-from digitalio import DigitalInOut, Direction, Pull
 import random
+import neopixel
+import board
+from digitalio import DigitalInOut, Direction, Pull
+from analogio import AnalogIn
+
 
 Dred = (255, 0, 0)
 Dwhite = (255, 255, 255)
@@ -40,22 +42,17 @@ cross = [True, False, True, True, True, True]
 crosshole = [True, False, True, True, False, True]
 center = [False, False, False, False, True, False]
 
-sounds = [
-    "TileMoved",
-    "TileMovedRowUp",
-    "TileMovedRowDn",
-    "TileMovedColRt",
-    "TileMovedColLt",
-    "ShuffleStart",
-    "ShuffleStop",
-    "Progress25",
-    "Progress50",
-    "Progress75",
-    "Progress90",
-    "Solved",
-    "MultiHoles",
-    "MultiHolesFail"
-    "HoleJumped"]
+# number of clips per sound type, 0 through X
+soundReset = [0, 6]
+soundLeft = [10, 16]
+soundRight = [20, 26]
+soundUp = [30, 36]
+soundDown = [40, 46]
+soundShuffle = [50, 57]
+soundProgress = [70, 79]
+soundSuccess = [80, 88]
+soundError = [90, 93]
+
 
 # ---------------------------------------------------------------------------
 # Define the tile light strips as a 2D array
@@ -133,13 +130,22 @@ for r in range(5):
         sense[r][c].direction = Direction.INPUT
         sense[r][c].pull = Pull.UP
 
-# ----------------------------------------------------
-# For big blue button:
 #  attach D1 to switch post near LED
 #  attach GND to post on back of switch
 resetButton = DigitalInOut(board.D1)
 resetButton.direction = Direction.INPUT
 resetButton.pull = Pull.UP
+
+# ----------------------------------------------------
+# For slider potentiometer:
+# 1 = ground
+# 2 = Analog I/O
+# 3 = 3.3v
+# ----------------------------------------------------
+slider = AnalogIn(board.A1)
+
+def getValue(pin):
+    return (pin.value) / 65536
 
 # ------------------------------------------------------------------
 # For the tile, set the LEDs to specifed pattern and indicated color
@@ -234,7 +240,7 @@ def shuffle(game, reps):
                 showPattern(tiles[hR][hC], game[hR][hC], colorPostshuffle)
                 time.sleep(0.1)
                 showPattern(tiles[hR][hC], game[hR][hC], off)
-                playSound("TileMoved")
+                playSound(random.randint(soundShuffle[0], soundShuffle[1]))
             hR = nR
             hC = nC
             printPattern(game)
@@ -268,9 +274,9 @@ def moveRows(game, dist, ohR, ohC):
             game[ohR+r*dir][ohC],
             colorMove)
         if dir > 0:
-            playSound("TileMovedRowUp")
+            playSound(random.randint(soundUp[0], soundUp[1]))
         else:
-            playSound("TileMovedRowDn")
+            playSound(random.randint(soundDown[0], soundDown[1]))
         printPattern(game)
 
 # ---------------------------------------------------------
@@ -286,9 +292,9 @@ def moveCols(game, dist, ohR, ohC):
             game[ohR][ohC+c*dir],
             colorMove)
         if dir > 0:
-            playSound("TileMovedColLt")
+            playSound(random.randint(soundLeft[0], soundLeft[1]))
         else:
-            playSound("TileMovedColRt")
+            playSound(random.randint(soundRight[0], soundRight[1]))
         printPattern(game)
 
 # -----------------------------------------------------------
@@ -377,6 +383,14 @@ for r in range(5):
     for c in range(5):
         matrix[r][c] = goal[r][c]
 
+# ----------------------------
+# Determine difficulty 0-8
+difficulty = int(getValue(slider) * 9)
+
+# ----------------------------------
+# Figure out reset button
+# ------------------------
+
 # -------------------------------------------------------------------
 # shuffle
 oldHoleRow, oldHoleCol = shuffle(matrix, shuffleReps)
@@ -429,7 +443,7 @@ while True:
     if (numHoles > 1):
         countMultiHoles = countMultiHoles + 1
         if (countMultiHoles > countMultiHolesLimit):
-            playSound("MultiHolesFail")
+            playSound(random.randint(soundError[0], soundError[1]))
     else:
         countMultiHoles = 0
         print("Old: ", oldHoleRow, ",", oldHoleCol)
@@ -441,7 +455,7 @@ while True:
             print("No change:", oldHoleRow, ",", oldHoleCol)
         else:
             if (rdist != 0) and (cdist != 0):
-                playSound("HoleJumped")
+                playSound(random.randint(soundError[0], soundError[1]))
             if rdist != 0:
                 moveRows(matrix, rdist, oldHoleRow, oldHoleCol)
             else:  # must be cdist > 0
@@ -463,12 +477,12 @@ while True:
 
     progress = matches/pieces
     if (matches == pieces):
-        playSound("Solved")
+        playSound(random.randint(soundSuccess[0], soundSuccess[1]))
     elif progress > 0.9:
-        playSound("Progress90")
+        playSound(random.randint(soundProgress[0], soundProgress[1]))
     elif progress > 0.75:
-        playSound("Progress75")
+        playSound(random.randint(soundProgress[0], soundProgress[1]))
     elif progress > 0.5:
-        playSound("Progress50")
-    elif progress > 0.25:
-        playSound("Progress25")
+        playSound(random.randint(soundProgress[0], soundProgress[1]))
+
+
