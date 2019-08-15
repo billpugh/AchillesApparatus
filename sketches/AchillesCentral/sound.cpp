@@ -1,5 +1,16 @@
 #include <Arduino.h>
 
+#include "sound.h"
+
+#ifdef SKIP_SOUND
+
+ bool soundReady;
+
+void initializeSound() {}
+
+void playSound(const WedgeData &w) {}
+void updateSound() {}
+#else
 #include <Tsunami.h>
 #include "pinkNoise.h"
 #include "AchillesLog.h"
@@ -82,3 +93,5 @@ void playSound(const WedgeData & w) {
   }
 
 }
+
+#endif

@@ -1,9 +1,18 @@
 
+
 #include <Arduino.h>
+#include "time.h"
+
+#ifdef SKIP_TIME
+
+extern bool clockRunning;
+void initializeClock() {}
+void updateClock() {}
+#else
 #include <Wire.h>
 #include "RTClib.h"
 #include "AchillesCentral.h"
-#include "time.h"
+
 
 
 RTC_DS3231 rtc;
@@ -55,3 +64,4 @@ void updateClock() {
   centralData.daytime = (Daytime) period;
   centralData.lightLevel = lightLevel;
 }
+#endif
