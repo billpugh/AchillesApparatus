@@ -1,6 +1,6 @@
 
 
-// #define SKIP_TIME SKIP_TIME
+// #define SKIP_SOUND SKIP_SOUND
 
 #include "Achilles.h"
 #include "AchillesCentral.h"

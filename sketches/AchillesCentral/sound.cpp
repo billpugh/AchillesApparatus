@@ -4,14 +4,17 @@
 
 #ifdef SKIP_SOUND
 
- bool soundReady;
+bool soundReady;
 
 void initializeSound() {}
 
 void playSound(const WedgeData &w) {}
 void updateSound() {}
+
 #else
+
 #include <Tsunami.h>
+
 #include "pinkNoise.h"
 #include "AchillesLog.h"
 #include "AchillesCentral.h"
