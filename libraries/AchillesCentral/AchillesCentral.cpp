@@ -3,8 +3,8 @@
 #include "AchillesCentral.h"
 #include "AchillesLog.h"
 #include "sound.h"
+#include "time.h"
 #include <Wire.h>
-#include "RTClib.h"
 
 #include <Adafruit_NeoPixel.h>
 Adafruit_NeoPixel pointPixels(8 * 6, 3, NEO_GRB + NEO_KHZ800);
