@@ -1,9 +1,6 @@
 //master
 #include <Wire.h>
 
-byte packet = 0;
-byte incoming = 0;
-
 void setup() {
   Wire.begin();
   Serial.begin(115200);
@@ -12,28 +9,24 @@ void setup() {
 }
 
 void loop() {
-  Serial.print("Sending ");
-  Serial.print(packet);
-  Serial.print(" ... ");
+  Serial.print("Sending 7 bytes... ");
   
   Wire.beginTransmission(0x72);
-  Wire.write(packet);
+  Wire.write("0123456");
   Wire.endTransmission ();
-  
-  Wire.requestFrom(0x72, 1);
 
+  Serial.println("Requesting 9 bytes... ");
+  Wire.requestFrom(0x72, 9);
+
+  Serial.print("Incoming '");
+  byte count = 0;
   while (Wire.available()) {
-    incoming = Wire.read();
+    Serial.print((char) Wire.read());
+    ++count;
   }
+  Serial.print("' ");
+  Serial.print(count);
+  Serial.println(" bytes");
 
-  if (incoming == packet) {
-    Serial.println("success!");
-  } else {
-    Serial.print("failure! ");
-    Serial.println(incoming);
-  }
-
-  packet += 1;
-  
   delay(1000);
 }

@@ -5,7 +5,6 @@ from i2cslave import I2CSlave
 
 
 print('Achilles Aparatus TileMaze')
-packet = -1
 
 with I2CSlave(board.SCL, board.SDA, (0x72,)) as slave:
     while True:
@@ -20,9 +19,9 @@ with I2CSlave(board.SCL, board.SDA, (0x72,)) as slave:
                     print('{} {} {}'.format(time.monotonic(), request.is_read, request.is_restart))
                     if not request.is_read:
                         packet = request.read()
-                        print('Received packet: {}'.format(packet))
+                        print('Received {} bytes: {}'.format(len(packet), packet))
                     else:
-                        print("Wrote: {} byte(s)".format(request.write(bytearray(packet))))
+                        print("Wrote {} byte(s)".format(request.write(bytearray("abcdefghi"))))
 
 
             except OSError as e:
