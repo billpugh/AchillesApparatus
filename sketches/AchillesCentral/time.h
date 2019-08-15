@@ -1,5 +1,5 @@
 
-// #define SKIP_TIME SKIP_TIME
+#define SKIP_TIME SKIP_TIME
 
 #ifndef SKIP_TIME
 #include "RTClib.h"

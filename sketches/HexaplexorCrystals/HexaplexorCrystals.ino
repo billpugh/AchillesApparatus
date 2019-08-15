@@ -30,7 +30,7 @@ void setup() {
     delay(1);
   delay(1000);
   Serial.println("Hexaplexor Crystals Achilles Appartus widget");
-  setupComm(0x73);
+  setupComm(0x72);
   
   randomSeed(analogRead(0));
   FastLED.addLeds<WS2812, LED_PIN>(leds, NUM_LEDS);
