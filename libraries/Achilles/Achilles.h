@@ -9,6 +9,9 @@
 enum SoundAction { PLAY, STOP, FADE_OUT_200MS, FADE_OUT_1000MS };
 
 
+const char * soundActionName(SoundAction s);
+
+
 struct __attribute__ ((packed)) FromWidgetData {
 #ifdef ACHILLES_PACKET_DEBUG
   uint16_t packetNum = 0;
@@ -17,10 +20,10 @@ struct __attribute__ ((packed)) FromWidgetData {
   uint16_t secondsSinceBoot;
   uint16_t secondsSinceActivity;
 
-  // If non-zero, request that this track be played 
+  // If non-zero, request that this track be played
   uint16_t playThisTrack = 0;
   bool playGlobal = false;
-  SoundAction soundAction = PLAY; 
+  SoundAction soundAction = PLAY;
 
   /** Each wedge has 8 points/levels that can be activated/won; set the bits
       for the points that have been won.
