@@ -42,7 +42,7 @@ cross = [True, False, True, True, True, True]
 crosshole = [True, False, True, True, False, True]
 center = [False, False, False, False, True, False]
 
-# number of clips per sound type, 0 through X
+# sound clip index start and end values
 soundReset = [0, 6]
 soundLeft = [10, 16]
 soundRight = [20, 26]
@@ -322,6 +322,8 @@ def matchRealityToGoal(game, target):
 
 # -----------------------------------------------------------
 # Setup mazes
+# Need to define these with another dimension, and indicator of difficulty
+
 goal = [[0 for r in range(5)] for c in range(5)]
 goal[0][0] = blnk
 goal[0][1] = lort
@@ -378,7 +380,7 @@ matrix = [[0 for r in range(5)] for c in range(5)]
 # Main loop, eventually
 # -----------------------------------------------------------
 
-# copy goal to matrix
+# copy goal to matrix (yes, there are better ways. Good enough for now
 for r in range(5):
     for c in range(5):
         matrix[r][c] = goal[r][c]
