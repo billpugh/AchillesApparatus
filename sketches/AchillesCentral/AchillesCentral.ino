@@ -22,7 +22,7 @@ void setup() {
   Serial.begin(115200);
   while (!Serial & millis() < 3000) delay(10);
 
-  logf("Achilles Central, compiled %s, %s\n",
+  aalogf("Achilles Central, compiled %s, %s\n",
        F(__DATE__), F(__TIME__));
   //  int countdownMS = Watchdog.enable(14000);
   //  logf("Enabled the watchdog with max countdown of %d ms\n", countdownMS);
