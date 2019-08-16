@@ -1,6 +1,7 @@
 #include <Arduino.h>
 
 #include "sound.h"
+#include "AchillesLog.h"
 
 #ifdef SKIP_SOUND
 
@@ -8,7 +9,14 @@ bool soundReady;
 
 void initializeSound() {}
 
-void playSound(const WedgeData &w) {}
+void playSound(const WedgeData &w) {
+  if (w.data.playThisTrack == 0) return;
+
+  aalogf("Sound request from %s\n", w.name);
+  aalogf("  track %3d, %6s %s\n", w.data.playThisTrack, w.data.playGlobal ? "global" : "",
+        soundActionName(w.data.soundAction));
+}
+
 void updateSound() {}
 
 #else
