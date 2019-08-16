@@ -12,11 +12,11 @@ class EarToHear(object):
 
     MODE_QUIET = 0
     MODE_ACTIVE = 1
-    MODE_CHARGED = 2
-    MODE_DISCHARGING = 3
-    MODE_RESET = 4
-    MODE_CHEAT_CODE = 5
-    MODE_NOT_RECEIVED = 6
+    MODE_CHARGED = 2		# Ready for big reveal
+    MODE_DISCHARGING = 3	# Playing big reveal
+    MODE_RESET = 4			# Go away, start over
+    MODE_CHEAT_CODE = 5		
+    MODE_NOT_RECEIVED = 6	# Default if nothing is going on
 
     SYSTEM_MODES = [
         'QUIET',

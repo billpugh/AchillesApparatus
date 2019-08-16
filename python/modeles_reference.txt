@@ -1,0 +1,38 @@
+Support matrix: https://circuitpython.readthedocs.io/en/latest/shared-bindings/support_matrix.html
+usb_midi: https://circuitpython.readthedocs.io/en/latest/shared-bindings/usb_midi/__init__.html#module-usb_midi
+i2cslave: https://circuitpython.readthedocs.io/en/latest/shared-bindings/i2cslave/__init__.html#module-i2cslave
+	https://circuitpython.readthedocs.io/en/latest/shared-bindings/i2cslave/__init__.html
+	https://circuitpython.readthedocs.io/en/latest/shared-bindings/i2cslave/I2CSlave.html
+_pixelbuf: https://circuitpython.readthedocs.io/en/latest/shared-bindings/_pixelbuf/__init__.html#module-_pixelbuf
+analogio: https://circuitpython.readthedocs.io/en/latest/shared-bindings/analogio/__init__.html#module-analogio
+audiobusio: https://circuitpython.readthedocs.io/en/latest/shared-bindings/audiobusio/__init__.html#module-audiobusio
+audiocore: https://circuitpython.readthedocs.io/en/latest/shared-bindings/audiocore/__init__.html#module-audiocore/__init__
+audioio: https://circuitpython.readthedocs.io/en/latest/shared-bindings/audioio/__init__.html#module-audioio
+bitbangio: https://circuitpython.readthedocs.io/en/latest/shared-bindings/bitbangio/__init__.html#module-bitbangio
+board: https://circuitpython.readthedocs.io/en/latest/shared-bindings/board/__init__.html#module-board
+busio: https://circuitpython.readthedocs.io/en/latest/shared-bindings/busio/__init__.html#module-busio/__init__
+digitalio: https://circuitpython.readthedocs.io/en/latest/shared-bindings/digitalio/__init__.html#module-digitalio
+displayio: https://circuitpython.readthedocs.io/en/latest/shared-bindings/displayio/__init__.html#module-displayio
+frequencyio: https://circuitpython.readthedocs.io/en/latest/shared-bindings/frequencyio/__init__.html#module-frequencyio
+gamepad: https://circuitpython.readthedocs.io/en/latest/shared-bindings/gamepad/__init__.html#module-gamepad
+math: https://circuitpython.readthedocs.io/en/latest/shared-bindings/math/__init__.html#module-math
+microcontroller: https://circuitpython.readthedocs.io/en/latest/shared-bindings/microcontroller/__init__.html#module-microcontroller
+neopixel_write: https://circuitpython.readthedocs.io/en/latest/shared-bindings/neopixel_write/__init__.html#module-neopixel_write
+network: https://circuitpython.readthedocs.io/en/latest/shared-bindings/network/__init__.html#module-network
+nvm: https://circuitpython.readthedocs.io/en/latest/shared-bindings/nvm/__init__.html#module-nvm
+os: https://circuitpython.readthedocs.io/en/latest/shared-bindings/os/__init__.html#module-os
+ps2io: https://circuitpython.readthedocs.io/en/latest/shared-bindings/ps2io/__init__.html#module-ps2io
+pulseio: https://circuitpython.readthedocs.io/en/latest/shared-bindings/pulseio/__init__.html#module-pulseio
+random: https://circuitpython.readthedocs.io/en/latest/shared-bindings/random/__init__.html#module-random
+rotaryio: https://circuitpython.readthedocs.io/en/latest/shared-bindings/rotaryio/__init__.html#module-rotaryio
+rtc: https://circuitpython.readthedocs.io/en/latest/shared-bindings/rtc/__init__.html#module-rtc
+storage: https://circuitpython.readthedocs.io/en/latest/shared-bindings/storage/__init__.html#module-storage
+struct: https://circuitpython.readthedocs.io/en/latest/shared-bindings/struct/__init__.html#module-struct
+supervisor: https://circuitpython.readthedocs.io/en/latest/shared-bindings/supervisor/__init__.html#module-supervisor
+time: https://circuitpython.readthedocs.io/en/latest/shared-bindings/time/__init__.html#module-time
+usb_hid: https://circuitpython.readthedocs.io/en/latest/shared-bindings/usb_hid/__init__.html#module-usb_hid
+touchin: https://circuitpython.readthedocs.io/en/latest/shared-bindings/touchio/TouchIn.html
+
+
+	
+	
