@@ -70,39 +70,39 @@ ear = EarToHear(board.SCL, board.SDA, 0x72)
 tiles = [[0 for r in range(5)] for c in range(5)]
 
 tiles[0] = [
+  neopixel.NeoPixel(board.D28, 6, auto_write=False),
   neopixel.NeoPixel(board.D29, 6, auto_write=False),
   neopixel.NeoPixel(board.D30, 6, auto_write=False),
   neopixel.NeoPixel(board.D31, 6, auto_write=False),
-  neopixel.NeoPixel(board.D32, 6, auto_write=False),
-  neopixel.NeoPixel(board.D33, 6, auto_write=False)]
+  neopixel.NeoPixel(board.D32, 6, auto_write=False)]
 tiles[1] = [
+  neopixel.NeoPixel(board.D33, 6, auto_write=False),
   neopixel.NeoPixel(board.D34, 6, auto_write=False),
   neopixel.NeoPixel(board.D35, 6, auto_write=False),
   neopixel.NeoPixel(board.D36, 6, auto_write=False),
-  neopixel.NeoPixel(board.D37, 6, auto_write=False),
-  neopixel.NeoPixel(board.D38, 6, auto_write=False)]
+  neopixel.NeoPixel(board.D37, 6, auto_write=False)]
 tiles[2] = [
+  neopixel.NeoPixel(board.D38, 6, auto_write=False),
   neopixel.NeoPixel(board.D39, 6, auto_write=False),
   neopixel.NeoPixel(board.D40, 6, auto_write=False),
   neopixel.NeoPixel(board.D41, 6, auto_write=False),
-  neopixel.NeoPixel(board.D42, 6, auto_write=False),
-  neopixel.NeoPixel(board.D43, 6, auto_write=False)]
+  neopixel.NeoPixel(board.D42, 6, auto_write=False)]
 tiles[3] = [
+  neopixel.NeoPixel(board.D43, 6, auto_write=False),
   neopixel.NeoPixel(board.D44, 6, auto_write=False),
   neopixel.NeoPixel(board.D45, 6, auto_write=False),
   neopixel.NeoPixel(board.D46, 6, auto_write=False),
-  neopixel.NeoPixel(board.D47, 6, auto_write=False),
-  neopixel.NeoPixel(board.D48, 6, auto_write=False)]
+  neopixel.NeoPixel(board.D47, 6, auto_write=False)]
 tiles[4] = [
+  neopixel.NeoPixel(board.D48, 6, auto_write=False),
   neopixel.NeoPixel(board.D49, 6, auto_write=False),
   neopixel.NeoPixel(board.D50, 6, auto_write=False),
   neopixel.NeoPixel(board.D51, 6, auto_write=False),
-  neopixel.NeoPixel(board.D52, 6, auto_write=False),
-  neopixel.NeoPixel(board.D53, 6, auto_write=False)]
+  neopixel.NeoPixel(board.D52, 6, auto_write=False)]
 
 # ----------------------------------------------------------
-# Define the edge light strip. NOTE: D54 -> A8
-edge = neopixel.NeoPixel(board.A15, 20, auto_write=False)
+# Define the edge light strip
+edge = neopixel.NeoPixel(board.D53, 20, auto_write=False)
 
 # -----------------------------------------------------------
 # Define the pull-up inputs that sense if a tile is in place
@@ -126,13 +126,13 @@ sense[2][4] = DigitalInOut(board.D16)
 sense[3][0] = DigitalInOut(board.D17)
 sense[3][1] = DigitalInOut(board.D18)
 sense[3][2] = DigitalInOut(board.D19)
-sense[3][3] = DigitalInOut(board.D22)  # D20 and D21 are used by I2C
-sense[3][4] = DigitalInOut(board.D23)
-sense[4][0] = DigitalInOut(board.D24)
-sense[4][1] = DigitalInOut(board.D25)
-sense[4][2] = DigitalInOut(board.D26)
-sense[4][3] = DigitalInOut(board.D27)
-sense[4][4] = DigitalInOut(board.D28)
+#sense[3][3] = DigitalInOut(board.A10)  # D20 is used by I2C
+#sense[3][4] = DigitalInOut(board.A11)  # D21 us used by I2C
+sense[4][0] = DigitalInOut(board.D23)
+sense[4][1] = DigitalInOut(board.D24)
+sense[4][2] = DigitalInOut(board.D25)
+sense[4][3] = DigitalInOut(board.D26)
+sense[4][4] = DigitalInOut(board.D27)
 
 # Initialize inputs
 for r in range(5):
@@ -149,7 +149,7 @@ resetButton.pull = Pull.UP
 # ----------------------------------------------------
 # For slider potentiometer:
 # 1 = ground
-# 2 = Analog I/O -> A1
+# 2 = Analog I/O
 # 3 = 3.3v
 # ----------------------------------------------------
 slider = AnalogIn(board.A1)
@@ -239,7 +239,7 @@ def shuffle(game, reps):
             if (game[hR][hR] != blnk):
                 if DEBUG:
                     print("Clip:",
-                          random.randint(soundShuffle[0], soundShuffle[1]))
+                          random.randint(soundShuffle[0],soundShuffle[1]))
                 ear.play_audio(
                     random.randint(soundShuffle[0], soundShuffle[1]))
                 # blink the pattern in the old and new spaces
@@ -281,13 +281,11 @@ def moveRows(game, dist, ohR, ohC):
             game[ohR+r*dir][ohC],
             colorMove)
         if dir > 0:
-            if DEBUG:
-                print("Clip:", random.randint(soundUp[0], soundUp[1]))
+            if DEBUG: print("Clip:", random.randint(soundUp[0], soundUp[1]))
             ear.play_audio(
                 random.randint(soundUp[0], soundUp[1]))
         else:
-            if DEBUG:
-                print("Clip:", random.randint(soundDown[0], soundDown[1]))
+            if DEBUG: print("Clip:", random.randint(soundDown[0], soundDown[1]))
             ear.play_audio(
                 random.randint(soundDown[0], soundDown[1]))
         printPattern(game)
@@ -305,13 +303,11 @@ def moveCols(game, dist, ohR, ohC):
             game[ohR][ohC+c*dir],
             colorMove)
         if dir > 0:
-            if DEBUG:
-                print("Clip:", random.randint(soundLeft[0], soundLeft[1]))
+            if DEBUG: print("Clip:", random.randint(soundLeft[0], soundLeft[1]))
             ear.play_audio(
                 random.randint(soundLeft[0], soundLeft[1]))
         else:
-            if DEBUG:
-                print("Clip:", random.randint(soundRight[0], soundRight[1]))
+            if DEBUG: print("Clip:", random.randint(soundRight[0], soundRight[1]))
             ear.play_audio(
                 random.randint(soundRight[0], soundRight[1]))
         printPattern(game)
@@ -424,11 +420,9 @@ newHoleRow = int(input("Physical hole row: "))
 newHoleCol = int(input("Physical hole col: "))
 
 if numHoles == 0:
-    if DEBUG:
-        print("No holes!!!!")
+    if DEBUG: print("No holes!!!!")
 elif numHoles > 1:
-    if DEBUG:
-        print("Tiles not aligned")
+    if DEBUG: print("Tiles not aligned")
 else:
     if newHoleRow-oldHoleRow != 0:
         moveRows(matrix, newHoleRow-oldHoleRow, oldHoleRow, oldHoleCol)
@@ -468,8 +462,7 @@ while True:
         ear.get_light_level_name()))
 
     if ear.system_mode == EarToHear.MODE_RESET:
-        if DEBUG:
-            print("CANCEL THE GAME AND SHOW SLOW BLINK PATTERN UNTIL DONE")
+        if DEBUG: print("CANCEL THE GAME AND SHOW SLOW BLINK PATTERN UNTIL DONE")
         ear.play_audio(soundSysReset)
 
         # +++++++ figure out best way to loop until reset is complete
@@ -478,8 +471,7 @@ while True:
     # look for physical holes in the game table
     # numHoles, newHoleRow, newHoleCol = findHoles()
     # +++++++ do it manually for now
-    if DEBUG:
-        print("Old: ", oldHoleRow, ",", oldHoleCol)
+    if DEBUG: print("Old: ", oldHoleRow, ",", oldHoleCol)
     numHoles = 1
     newHoleRow = int(input("New row: "))
     newHoleCol = int(input("New col: "))
@@ -489,29 +481,23 @@ while True:
     if (numHoles > 1):
         countMultiHoles = countMultiHoles + 1
         if (countMultiHoles > countMultiHolesLimit):
-            if DEBUG:
-                print(random.randint(soundError[0], soundError[1]))
+            if DEBUG: print(random.randint(soundError[0], soundError[1]))
             ear.play_audio(random.randint(soundError[0], soundError[1]))
             countMultiHoles = int(countMultiHoles/2)
 
     else:
         countMultiHoles = 0
-        if DEBUG:
-            print("Old: ", oldHoleRow, ",", oldHoleCol)
-        if DEBUG:
-            print("New: ", newHoleRow, ",", newHoleCol)
+        if DEBUG: print("Old: ", oldHoleRow, ",", oldHoleCol)
+        if DEBUG: print("New: ", newHoleRow, ",", newHoleCol)
         rdist = newHoleRow - oldHoleRow
         cdist = newHoleCol - oldHoleCol
         # Did anything move?
         if (rdist == 0) and (cdist == 0):
-            if DEBUG:
-                print("No change:", oldHoleRow, ",", oldHoleCol)
+            if DEBUG: print("No change:", oldHoleRow, ",", oldHoleCol)
         else:
             if (rdist != 0) and (cdist != 0):
                 # hole made impossible jump
-                if DEBUG:
-                    print("Error:", 
-                          random.randint(soundError[0], soundError[1]))
+                if DEBUG: playSound(random.randint(soundError[0], soundError[1]))
                 ear.play_audio(random.randint(soundError[0], soundError[1]))
             if rdist != 0:
                 moveRows(matrix, rdist, oldHoleRow, oldHoleCol)
@@ -531,30 +517,20 @@ while True:
         print("goal")
         printPattern(goal)
     pieces, matches = matchRealityToGoal(matrix, goal)
-    if DEBUG:
-        print("Progress: ", matches, "out of", pieces)
+    if DEBUG: print("Progress: ", matches, "out of", pieces)
 
     # Is it solved yet?
     # +++++++++++++ Find better clips to signify progress sounds
     progress = matches/pieces
     if (matches == pieces):
-        if DEBUG:
-            print("Success:", random.randint(soundSuccess[0], soundSuccess[1]))
+        if DEBUG: playSound(random.randint(soundSuccess[0], soundSuccess[1]))
         ear.play_audio(random.randint(soundSuccess[0], soundSuccess[1]))
     elif progress > 0.9:
-        if DEBUG:
-            print("Progress 90%:", 
-                  random.randint(soundProgress[0], soundProgress[1]))
+        if DEBUG: playSound(random.randint(soundProgress[0], soundProgress[1]))
         ear.play_audio(random.randint(soundProgress[0], soundProgress[1]))
     elif progress > 0.75:
-        if DEBUG:
-            print("Progress 75%:", 
-                  random.randint(soundProgress[0], soundProgress[1]))
+        if DEBUG: playSound(random.randint(soundProgress[0], soundProgress[1]))
         ear.play_audio(random.randint(soundProgress[0], soundProgress[1]))
     elif progress > 0.5:
-        if DEBUG:
-            print("Progress 50%:", 
-                  random.randint(soundProgress[0], soundProgress[1]))
+        if DEBUG: playSound(random.randint(soundProgress[0], soundProgress[1]))
         ear.play_audio(random.randint(soundProgress[0], soundProgress[1]))
-       
-        
