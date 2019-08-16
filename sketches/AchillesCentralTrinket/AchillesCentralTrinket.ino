@@ -20,6 +20,7 @@ int totalPoints;
 int lastPin;
 
 void setup() {
+  pinMode(1, INPUT_PULLUP);
   Serial.begin(115200);
   while (!Serial & millis() < 3000) delay(10);
 
@@ -35,6 +36,14 @@ void setup() {
 
 void loop() {
   // Watchdog.reset();
+  int nextPin = digitalRead(1);
+  if (nextPin == 0 && lastPin == 1) {
+    updateCentralData((SystemMode)((centralData.systemMode + 1) % 6));
+    Serial.print("Change system mode to ");
+    Serial.println(centralData.systemMode);
+  }
+  lastPin = nextPin;
+  
   lastActivity = millis();
   updateClock();
   scanWedges(centralData.systemMode);
