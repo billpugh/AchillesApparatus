@@ -116,10 +116,13 @@ class EarToHear(object):
         self.points_activated = int(value) % 255
 
     def check_i2c(self):
-        status = True
+        status = False
+        info = None
         request = self.slave.request()
 
-        if request:
+        if not request:
+            info = 'no request'
+        else:
             try:
                 with request:
                     if not request.is_read:
@@ -133,9 +136,11 @@ class EarToHear(object):
                                 self.system_mode,
                                 self.day_time,
                                 self.light_level) = struct.unpack('HHHHBBb', packet)
+                                status = True
+                                info = 'received'
                             except Exception:
+                                info = 'decode error'
                                 print('Could not decode debug packet! Expecting 11 bytes, got {}'.format(len(packet)))
-                                status = False
                         else:
                             try:
                                 (self.time_since_global_,
@@ -143,10 +148,11 @@ class EarToHear(object):
                                 self.system_mode,
                                 self.day_time,
                                 self.light_level) = struct.unpack('HHBBb', packet)
+                                status = True
+                                info = 'received'
                             except Exception as e:
-                                print('{} {}'.format(packet, e))
+                                info = 'decode error'
                                 print('Could not decode debug packet! Expecting 7 bytes, got {}'.format(len(packet)))
-                                status = False
                     else:
                         now = time.monotonic()
                         if self.debug:
@@ -173,16 +179,19 @@ class EarToHear(object):
 
                         try:
                             request.write(packet)
+                            status = True
+                            info = 'sent'
                         except Exception as e:
+                            info = 'send error'
                             print('Could not send packet! {}'.format(e))
-                            status = False
 
                         self.audio_track = 0
                         self.audio_global = False
                         self.audio_action = EarToHear.AUDIO_PLAY
 
             except Exception as e:
-                print('Problem with I2C! {}'.format(e))
                 status = False
+                info = 'exception ' + str(e)
+                print('Problem with I2C! {}'.format(e))
 
-        return status
+        return (status, info)

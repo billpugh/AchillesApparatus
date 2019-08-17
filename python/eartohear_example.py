@@ -19,8 +19,9 @@ ear = EarToHear(board.SCL, board.SDA, 0x72)
 
 while True:
     # This call is needed in your main loop
-    ear.check_i2c()
-    
+    i2c_status, i2c_info = ear.check_i2c()
+    print('i2c: {} {}'.format(i2c_status, i2c_info))
+
     time.sleep(0.1)
     # This call will set the points for this wedge
     ear.set_points(int(time.monotonic()) % 9)
