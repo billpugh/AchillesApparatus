@@ -150,11 +150,12 @@ void setupComm(int wedgeAddress) {
 
 #if defined(__arm__) && defined(CORE_TEENSY)
   aalog("setting up i2c on Teensy\n");
-  // Setup for Slave mode, address 0x44, pins 18/19, external pullups, 400kHz
-  Wire.begin(I2C_SLAVE, wedgeAddress, I2C_PINS_18_19, I2C_PULLUP_EXT, I2C_RATE_400);
+  // Setup for Slave mode, address 0x44, pins 18/19, external pullups, 100kHz
+  Wire.begin(I2C_SLAVE, wedgeAddress, I2C_PINS_18_19, I2C_PULLUP_EXT, I2C_RATE_100);
   Wire.setDefaultTimeout(100); // 100 usecs timeout
 #else
   aalog("setting up i2c on non-Teensy\n");
+  Wire.setClock(100000);
   Wire.begin(wedgeAddress);
 #endif
   aalogf("i2c Slave address: 0x%02x\n", wedgeAddress);
@@ -163,7 +164,7 @@ void setupComm(int wedgeAddress) {
   // register events
   Wire.onReceive(receiveEvent);
   Wire.onRequest(requestEvent);
-
+  
 }
 
 
@@ -196,7 +197,6 @@ uint16_t secondsBetween(unsigned long start, unsigned long end) {
 //
 void requestEvent(void)
 {
-  aalogf("requestEvent, writing %d bytes\n", sizeof(FromWidgetData));
   populateFromWidgetData();
   uint8_t * p = (uint8_t *)&fromWidgetData;
   Wire.write(p, sizeof(FromWidgetData));

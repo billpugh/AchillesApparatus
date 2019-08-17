@@ -23,12 +23,7 @@ unsigned long lastStatusReport = 0;
 void setup() {
   Serial.begin(115200);
   delay(3000);
-  Serial.println("Hexaplexor Helper Achilles Appartus Widget");
-  
-  aalog("Achilles data size\n");
-  aalogf("FromWidgetData size: %d\n", sizeof(FromWidgetData));
-  aalogf("toWidgetData size: %d\n", sizeof(ToWidgetData));
-  
+  Serial.println("Hexaplexor Helper Achilles Appartus Widget");  
   setupComm(0x73);
 
   // turn off the lamp
@@ -137,5 +132,4 @@ void loop() {
   }
 
   lastSystemMode = systemMode;
-
 }

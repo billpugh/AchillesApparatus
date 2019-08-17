@@ -47,9 +47,11 @@ unsigned long lastMessageReported = 0;
 
 // measure servo position
 int readServoAngle(int pwmPin) {
+  int baseline;
   int tHigh;
   int tLow;
   int tCycle;
+  int attempts = 0;
   
   float theta = 0;
   float dc = 0;
@@ -57,20 +59,31 @@ int readServoAngle(int pwmPin) {
   float dcMin = 0.029;
   float dcMax = 0.971;
   float dutyScale = 1;
+  bool success = false;
  
-  while(1) {
-    pulseIn(pwmPin, LOW);
-    tHigh = pulseIn(pwmPin, HIGH);
-    tLow =  pulseIn(pwmPin, LOW);
-    tCycle = tHigh + tLow;
-    if ((tCycle > 1000) && ( tCycle < 1200)) {
+  while(attempts < 100) {
+    baseline = pulseIn(pwmPin, LOW, 200);
+    if (baseline == 0) {
       break;
+    } else {
+      tHigh = pulseIn(pwmPin, HIGH, 200);
+      tLow =  pulseIn(pwmPin, LOW, 200);
+      tCycle = tHigh + tLow;
+      if ((tCycle > 1000) && ( tCycle < 1200)) {
+        success = true;
+        break;
+      }
+      attempts += 1;
     }
  }
 
- dc = (dutyScale * tHigh) / tCycle;
- theta = ((dc - dcMin) * unitsFC) / (dcMax - dcMin);
- return theta;
+ if (success) {
+   dc = (dutyScale * tHigh) / tCycle;
+   theta = ((dc - dcMin) * unitsFC) / (dcMax - dcMin);
+   return theta;
+ } else {
+  return -1000;
+ }
 }
 
 void turnServo(byte i, int goal) {
@@ -80,18 +93,27 @@ void turnServo(byte i, int goal) {
 
   servoGoal[i] = goal;
 
-  if (dist != 0) {
-    servoActive[i] = true;
-
-    if (dist > 1) {
-      ss = map(abs(dist), 0, 180, CW_SLOW, CW_FAST);
-      servo[i].write(90 - ss);
-    } else {
-      ss = map(abs(dist), 0, 180, CCW_SLOW, CCW_FAST);
-      servo[i].write(90 + ss); 
-    }
-  } else {
+  // handle non-working feedback
+  if (pos == -1000) {
+    servoGoal[i] = goal;
+    servoActive[i] = false;
     servo[i].write(90);
+
+  // handle working feedback
+  } else {
+    if (dist != 0) {
+      servoActive[i] = true;
+  
+      if (dist > 1) {
+        ss = map(abs(dist), 0, 180, CW_SLOW, CW_FAST);
+        servo[i].write(90 - ss);
+      } else {
+        ss = map(abs(dist), 0, 180, CCW_SLOW, CCW_FAST);
+        servo[i].write(90 + ss); 
+      }
+    } else {
+      servo[i].write(90);
+    }
   }
 }
 
@@ -132,6 +154,7 @@ void resetPuzzle(bool spin) {
     wheelState[5] = 0;
     Serial.print("Scrambling puzzle! Difficulty: ");
     Serial.println(difficulty);
+    Serial.print("Code: ");
 
     for (byte i=0; i<SCRAMBLES; ++i) {
       index = random(6);
@@ -244,7 +267,6 @@ void loop() {
   // handle i2c comms
   commStatus = commOK();
   if (!commStatus && now > 2000 &&  now - 2000 > lastCommComplaint) {
-    Serial.println("I2C error");
     lastCommComplaint = now;
   }
   if (commStatus && now > 5000 &&  now - 5000 > lastStatusReport) {
@@ -289,21 +311,30 @@ void loop() {
         goal = servoGoal[i];
         pos = readServoAngle(servoFeedback[i]);
         dist = ((goal - pos + 540) % 360) - 180;
-    
-        if (dist > 1) {
-          ss = map(abs(dist), 0, 180, CW_SLOW, CW_FAST);
-          servo[i].write(ss);
-        } else {
-          ss = map(abs(dist), 0, 180, CCW_SLOW, CCW_FAST);
-          servo[i].write(ss); 
-        }
-  
-        if (abs(dist) < 5) {
+
+        // handle non-responding feedback (error)
+        if (pos == -1000) {
+          servoActive[i] = false;
+          servoClose[i] = false;
           servo[i].write(90);
-          servoClose[i] += 1;
-          if (servoClose[i] == CLOSE_ATTEMPTS) {
-            servoActive[i] = false;
-            servoClose[i] = 0;
+
+        // handle normal, working case
+        } else {
+          if (dist > 1) {
+            ss = map(abs(dist), 0, 180, CW_SLOW, CW_FAST);
+            servo[i].write(ss);
+          } else {
+            ss = map(abs(dist), 0, 180, CCW_SLOW, CCW_FAST);
+            servo[i].write(ss); 
+          }
+    
+          if (abs(dist) < 5) {
+            servo[i].write(90);
+            servoClose[i] += 1;
+            if (servoClose[i] == CLOSE_ATTEMPTS) {
+              servoActive[i] = false;
+              servoClose[i] = 0;
+            }
           }
         }
       }
