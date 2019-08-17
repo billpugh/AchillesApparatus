@@ -178,6 +178,44 @@ def showPattern(tile, pattern, color):
             tile[index] = off
     tile.show()
 
+def playSuccessLights(game):
+    for x in range(10):
+        for r in range(5):
+            for c in range(5):
+                showPattern(
+                    tiles[r][c],
+                    matrix[r][c],
+                    Dwhite)
+                for e in range(20):
+                    edge[e] = Dblue
+                    edge.show
+                time.sleep(0.25)
+                showPattern(
+                    tiles[r][c],
+                    matrix[r][c],
+                    off)
+                for e in range(20):
+                    edge[e] = off
+                    edge.show
+                time.sleep(0.1)
+                showPattern(
+                    tiles[r][c],
+                    matrix[r][c],
+                    Dblue)
+                for e in range(20):
+                    edge[e] = Dwhite
+                    edge.show
+                time.sleep(0.25)
+                showPattern(
+                    tiles[r][c],
+                    matrix[r][c],
+                    off)            
+                for e in range(20):
+                    edge[e] = off
+                    edge.show
+                time.sleep(0.1)
+    clearBoard()
+    
 # Print configuration of matrix
 def printPattern(matrix):
     for r in range(5):
@@ -353,7 +391,7 @@ def moveCols(game, dist, ohR, ohC):
             printPattern(game)
         nhC = ohC+(c+1)*dir
     ohC = nhC
-            
+
 
 # -----------------------------------------------------------
 # How's it going?
@@ -381,7 +419,7 @@ def processMasterReset():
     if DEBUG:
         print("system_mode = MASTER RESET")
     # ??? ear.play_audio(soundSysReset)
-    # play slow blink pattern
+    # play flashing red pattern then red X
     ear.set_points_bits(0)
     time.sleep(5.0)
 
@@ -529,7 +567,7 @@ while True:
         newHoleCol = int(input("Physical hole col: "))
     if DEBUG:
         print("New row & col:", newHoleRow, newHoleCol)
-        
+
     if numHoles == 0:
         if DEBUG:
             print("No holes!!!!")
@@ -634,12 +672,9 @@ while True:
                     off)
                 oldHoleRow = newHoleRow
                 oldHoleCol = newHoleCol
-                oldHoleCol = newHoleCol
-
+                
         if DEBUG:
-            print("Matrix")
-            printPattern(matrix)
-            print("goal")
+            print("Goal")
             printPattern(goal[level][instance])
         pieces, matches = matchRealityToGoal(matrix, goal[level][instance])
         if DEBUG:
@@ -653,6 +688,10 @@ while True:
                 print("Success:",
                       random.randint(soundSuccess[0], soundSuccess[1]))
             ear.play_audio(random.randint(soundSuccess[0], soundSuccess[1]))
+            playSuccessLights(matrix)
+            ear.set_points(level)
+            
+            break
         elif progress > 0.9:
             if DEBUG:
                 print("Progress 90%:",
