@@ -6,7 +6,7 @@
 //#define ACHILLES_PACKET_DEBUG ACHILLES_PACKET_DEBUG
 
 
-enum SoundAction { PLAY, STOP, FADE_OUT_200MS, FADE_OUT_1000MS };
+enum SoundAction : uint8_t { PLAY, STOP, FADE_OUT_200MS, FADE_OUT_1000MS };
 
 
 const char * soundActionName(SoundAction s);
@@ -44,7 +44,7 @@ struct __attribute__ ((packed)) FromWidgetData {
     of a sound board
     NOT_RECEIVED - No communication has been received from Central
 */
-enum SystemMode { QUIET, ACTIVE, CHARGED, DISCHARGING, RESET,  CHEAT_CODE, NOT_RECEIVED};
+enum SystemMode : uint8_t { QUIET, ACTIVE, CHARGED, DISCHARGING, RESET,  CHEAT_CODE, NOT_RECEIVED};
 
 
 inline const char* systemModeName(SystemMode s) {
@@ -65,7 +65,7 @@ inline const char* systemModeName(SystemMode s) {
 // EVENING_TWILIGHT: 7:38pm
 // NIGHT: 8:08pm
 
-enum Daytime { NIGHT, MORNING_TWILIGHT, DAWN, DAY, DUSK, EVENING_TWILIGHT, UNKNOWN_SUNLIGHT };
+enum Daytime : uint8_t { NIGHT, MORNING_TWILIGHT, DAWN, DAY, DUSK, EVENING_TWILIGHT, UNKNOWN_SUNLIGHT };
 
 inline const char* daytimeName(Daytime d) {
   switch (d) {

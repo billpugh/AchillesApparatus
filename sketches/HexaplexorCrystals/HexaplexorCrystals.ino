@@ -1,7 +1,8 @@
+#include "FastLED.h"
+
 #include "Achilles.h"
 #include "AchillesWedge.h"
 #include "AchillesLog.h"
-#include "FastLED.h"
 
 
 #define LAMP_PIN         3
@@ -18,19 +19,18 @@ unsigned long lastCommComplaint = 0;
 unsigned long lastStatusReport = 0;
 
 void setup() {
+  Serial.begin(115200);
+  delay(3000);
+  Serial.println("Hexaplexor Helper Achilles Appartus Widget");
+  
+  aalog("Achilles data size\n");
+  aalogf("FromWidgetData size: %d\n", sizeof(FromWidgetData));
+  aalogf("toWidgetData size: %d\n", sizeof(ToWidgetData));
+  
+  setupComm(0x72);
+
   // turn off the lamp
   lampOff();
-
-  // turn off internal pullups on I2C pins
-  pinMode(SDA, INPUT);
-  pinMode(SCL, INPUT);
-  
-  Serial.begin(115200);
-  while (!Serial && millis() < 3000)
-    delay(1);
-  delay(1000);
-  Serial.println("Hexaplexor Crystals Achilles Appartus widget");
-  setupComm(0x72);
   
   randomSeed(analogRead(0));
   FastLED.addLeds<WS2812, LED_PIN>(leds, NUM_LEDS);
@@ -61,17 +61,23 @@ void loop() {
   byte activeCrystal;
   SystemMode systemMode;
   unsigned long now = millis();
+  bool commStatus;
   
-  if (!commOK() && now > 2000 &&  now - 2000 > lastCommComplaint) {
+  // handle i2c comms
+  commStatus = commOK();
+  if (!commStatus && now > 2000 &&  now - 2000 > lastCommComplaint) {
     lastCommComplaint = now;
-    Serial.print("Comm not working at ");
-    Serial.println(now);
   }
-  if (commOK() && now > 5000 &&  now - 5000 > lastStatusReport) {
+  if (commStatus && now > 5000 &&  now - 5000 > lastStatusReport) {
     lastStatusReport = now;
   }
   
   systemMode = getSystemMode();
+
+  if (systemMode != lastSystemMode) {
+    Serial.print("Change SystemMode: ");
+    Serial.println(systemMode);
+  }
 
   if (systemMode == DISCHARGING) {
     if (lampStatus) {
@@ -125,4 +131,6 @@ void loop() {
   }
 
   lastSystemMode = systemMode;
+
+  FastLED.delay(30);
 }

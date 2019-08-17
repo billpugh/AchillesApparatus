@@ -23,6 +23,8 @@
 #define WIN_2_SOUND          4
 #define WIN_3_SOUND          5
 
+#define DRIP_RATE          180
+
 Servo servo[NUM_SERVOS];
 
 byte servoControl [] = {3, 4, 5, 6, 9, 10};
@@ -37,7 +39,10 @@ byte wheelState[] = {0, 0, 0, 0, 0, 0};
 byte difficulty = 2;
 unsigned long lastInteraction;
 bool resetFlag = false;
-
+byte lastSystemMode = 0;
+byte systemMode = 0;
+byte points = 0;
+unsigned long lastDrip;
 unsigned long lastMessageReported = 0;
 
 // measure servo position
@@ -85,6 +90,8 @@ void turnServo(byte i, int goal) {
       ss = map(abs(dist), 0, 180, CCW_SLOW, CCW_FAST);
       servo[i].write(90 + ss); 
     }
+  } else {
+    servo[i].write(90);
   }
 }
 
@@ -205,6 +212,8 @@ void setup() {
   randomSeed(analogRead(23));
   lastInteraction = millis();
   resetFlag = true;
+
+  lastDrip = millis();
 }
 
 unsigned long lastCommComplaint = 0;
@@ -212,7 +221,8 @@ unsigned long lastStatusReport = 0;
 
 void loop() {
   byte i;
-  byte mode = READ_BUTTONS_MODE;
+  byte servoMode = READ_BUTTONS_MODE;
+  bool commStatus;
   int goal;
   int ss;
   int dist;
@@ -220,25 +230,60 @@ void loop() {
   
   unsigned long now = millis();
 
-  if (!commOK() && now > 2000 &&  now - 2000 > lastCommComplaint) {
-    lastCommComplaint = now;
-    logf("Comm not working at %d\n", now);
-  }
-  if (commOK() && now > 5000 &&  now - 5000 > lastStatusReport) {
-    lastStatusReport = now;
-    logf("System mode: %s\n", systemModeName(getSystemMode()));
-    logf("Daytime : %s\n", daytimeName(getDaytime()));
-    logf("Light level : %d\n", getLightLevel());
+  // slowly drip away points
+  if ((now - lastDrip) / 1000 > DRIP_RATE) {
+    if (points > 0) {
+      points -= 1;
+    }
+    lastDrip = now;
   }
 
+  // set points on wedge
+  setPointBits(255 >> (8 - (points % 9)));
+
+  // handle i2c comms
+  commStatus = commOK();
+  if (!commStatus && now > 2000 &&  now - 2000 > lastCommComplaint) {
+    Serial.println("I2C error");
+    lastCommComplaint = now;
+  }
+  if (commStatus && now > 5000 &&  now - 5000 > lastStatusReport) {
+    lastStatusReport = now;
+  }
+
+  // see if any servos need to move
   for (i=0; i<NUM_SERVOS; ++i) {
     if (servoActive[i] == true) {
-      mode = MOVE_SERVOS_MODE;
+      servoMode = MOVE_SERVOS_MODE;
       break;
     }
   }
+
+  // deal with system mode changes
+  systemMode = getSystemMode(); 
+
+  if (lastSystemMode != systemMode) {
+    Serial.print("CHANGE SYSTEM MODE! "); 
+    Serial.println(systemMode);
+    if (lastSystemMode == 3 || lastSystemMode == 4 || lastSystemMode == 5) {
+      lastDrip = millis();
+      points = 0;
+      resetFlag = true;
+
+      // make a pretty rainbow in reset mode
+      if (systemMode == 4) {
+        turnServo(0, 0);
+        turnServo(1, 60);
+        turnServo(2, 120);
+        turnServo(3, 180);
+        turnServo(4, 240);
+        turnServo(5, 300);
+      }
+    }
+  }
+  lastSystemMode = systemMode;
   
-  if (mode == MOVE_SERVOS_MODE) {
+  if (servoMode == MOVE_SERVOS_MODE) {
     for (i=0; i<NUM_SERVOS; ++i) {
       if (servoActive[i] == true) {
         goal = servoGoal[i];
@@ -263,55 +308,86 @@ void loop() {
         }
       }
     }
-  } else {
-    
-    
+  } else {    
     if (millis() - lastInteraction > RESET_TIME * 1000) {
       resetFlag = true;
     }
-    
-    if (resetFlag) {
-      difficulty = 2;
-      clearAllPoints();
-      resetPuzzle(false);
-      lastInteraction = millis();
-      resetFlag = false;
-      playSound(RESET_SOUND, false);
-      
-    } else {
 
-      if (checkPuzzleSolved()) {
-        if (difficulty == 2) {
-          difficulty = 3;
-          setPointBits(1);
-          playSound(WIN_1_SOUND, true);
-          resetPuzzle(true);
-          
-        } else if (difficulty == 3) {
-          difficulty = 6;
-          setPointBits(15);
-          playSound(WIN_2_SOUND, true);
-          resetPuzzle(true);
-          
-        } else if (difficulty == 6) {
-          difficulty = 2;
-          setPointBits(255);
-          playSound(WIN_3_SOUND, true);
-          resetPuzzle(true);
-        }
+    // discharging
+    if (systemMode == 3) {
+      // spin like crazy!
+      servo[0].write(20);
+      servo[1].write(160);
+      servo[2].write(20);
+      servo[3].write(160);
+      servo[4].write(20);
+      servo[5].write(160);
+
+    // reset mode
+    } else if (systemMode == 4) {
+      points = 0;
+
+    // cheat mode
+    } else if (systemMode == 5) {
+      for (i=0; i<NUM_SERVOS; ++i) {
+        servo[i].write(90);
+      }
+      turnServo(0, 1);
+      turnServo(1, 1);
+      turnServo(2, 1);
+      turnServo(3, 1);
+      turnServo(4, 1);
+      turnServo(5, 1);
+
+      // TODO: play sounds or something?
+      
+    // otherwise, play the game!
+    } else {
+      for (i=0; i<NUM_SERVOS; ++i) {
+        servo[i].write(90);
+      }
+      
+      if (resetFlag) {
+        difficulty = 2;
+        clearAllPoints();
+        resetPuzzle(false);
+        lastInteraction = millis();
+        resetFlag = false;
+        playSound(RESET_SOUND, false);
+        
       } else {
-        // read buttons to trigger wheel turning
-        for (i=0; i<NUM_BUTTONS; ++i) {
-  
-          if (digitalRead(buttons[i]) == LOW) {
-            if (buttonState[i] == false) {
-              triggerWheels(i);
-              lastInteraction = millis();
-            }
-            buttonState[i] = true;
-          } else {
-            buttonState[i] = false;
-          }  
+        if (checkPuzzleSolved()) {
+          lastDrip = millis();
+          
+          if (difficulty == 2) {
+            difficulty = 3;
+            points += 1;
+            playSound(WIN_1_SOUND, true);
+          } else if (difficulty == 3) {
+            difficulty = 6;
+            points += 3;
+            playSound(WIN_2_SOUND, true);
+          } else if (difficulty == 6) {
+            difficulty = 2;
+            points += 4;
+            playSound(WIN_3_SOUND, true);
+          }
+          points %= 9;
+          resetPuzzle(true);
+        } else {
+          // read buttons to trigger wheel turning
+          for (i=0; i<NUM_BUTTONS; ++i) {
+    
+            if (digitalRead(buttons[i]) == LOW) {
+              if (buttonState[i] == false) {
+                triggerWheels(i);
+                lastInteraction = millis();
+              }
+              buttonState[i] = true;
+            } else {
+              buttonState[i] = false;
+            }  
+          }
         }
       }
     }
