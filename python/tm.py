@@ -20,7 +20,7 @@ level = 0
 
 # This will be multiplied by difficulty: 0.0 - 1.0
 if DEBUG:
-    shuffleReps = 50
+    shuffleReps = 5
 else:
     shuffleReps = 1000
 
@@ -194,34 +194,36 @@ def playSuccessLights(game):
                     tiles[r][c],
                     matrix[r][c],
                     Dwhite)
-                for e in range(20):
-                    edge[e] = Dblue
-                    edge.show
-                time.sleep(0.25)
+        for e in range(20):
+            edge[e] = Dblue
+        time.sleep(0.25)
+        for r in range(5):
+            for c in range(5):
                 showPattern(
                     tiles[r][c],
                     matrix[r][c],
                     off)
-                for e in range(20):
-                    edge[e] = off
-                    edge.show
-                time.sleep(0.1)
+        for e in range(20):
+            edge[e] = off
+        time.sleep(0.1)
+        for r in range(5):
+            for c in range(5):
                 showPattern(
                     tiles[r][c],
                     matrix[r][c],
                     Dblue)
-                for e in range(20):
-                    edge[e] = Dwhite
-                    edge.show
-                time.sleep(0.25)
+        for e in range(20):
+            edge[e] = Dwhite
+        time.sleep(0.25)
+        for r in range(5):
+            for c in range(5):
                 showPattern(
                     tiles[r][c],
                     matrix[r][c],
                     off)
-                for e in range(20):
-                    edge[e] = off
-                    edge.show
-                time.sleep(0.1)
+        for e in range(20):
+            edge[e] = off
+        time.sleep(0.1)
     clearBoard()
 
 # Print configuration of matrix
@@ -244,7 +246,7 @@ def printPattern(matrix):
                 print("HZ  ", end="")
             if (matrix[r][c] == hole):
                 print("XX  ", end="")
-            
+
         print("")
     print("")
 
@@ -406,7 +408,7 @@ def matchRealityToGoal(game, target):
                 p = p + 1
             # do they match?
             if (game[r][c] == hole):
-                showPattern(tiles[r][c], game[r][c], colorHole)                
+                showPattern(tiles[r][c], game[r][c], colorHole)
             elif (game[r][c] == target[r][c]):
                 showPattern(tiles[r][c], game[r][c], colorMatch)
                 # and they are not blank?
@@ -502,8 +504,8 @@ goal[7][0][4][2] = horz
 goal[7][0][4][3] = horz
 goal[7][0][4][4] = uplt
 
-goalBegin[0][0] = 3
-goalEnd[0][0] = 18
+goalBegin[7][0] = 3
+goalEnd[7][0] = 18
 goalPieces[0][0] = countNonBlanks(goal[0][0])
 
 # ----------------------------------------
@@ -561,7 +563,8 @@ while True:
     for r in range(5):
         for c in range(5):
             matrix[r][c] = goal[level][instance][r][c]
-
+    edge[goalBegin[level][instance]] = Dwhite
+    edge[goalEnd[level][instance]] = Dwhite
     # -------------------------------------------------------------------
     # shuffle the tiles
     oldHoleRow, oldHoleCol = shuffle(matrix, shuffleReps)
@@ -609,7 +612,7 @@ while True:
             newHoleCol = int(input("New col: "))
             print("New: ", newHoleRow, ",", newHoleCol)
         # else look for button push
-        
+
         rdist = newHoleRow - oldHoleRow
         cdist = newHoleCol - oldHoleCol
         # Did anything move?
