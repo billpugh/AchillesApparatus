@@ -5,6 +5,8 @@ import board
 from digitalio import DigitalInOut, Direction, Pull
 from analogio import AnalogIn
 from eartohear import EarToHear
+from mazes import goal, goalBegin, goalEnd, \
+    uplt, uprt, lolt, lort, vert, horz, blnk, hole
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # TO DO
 #   - Use time of day to set the light levels
@@ -21,8 +23,10 @@ from eartohear import EarToHear
 #       + RESET (stop game, flash code)
 #       + NOT_RECEIVED (error code: Edge all red)
 #   + Show pattern while shuffling
-#   + Review audiobusio
+#   + Review audio
+#   + Blink hole and selected tile if button is pressed for illegal move
 #   + Mazes
+#       + Level 0
 #       + Level 0
 #       + Level 1
 #       + Level 2
@@ -47,7 +51,7 @@ level = 0
 
 # This will be multiplied by difficulty: 0.0 - 1.0
 if DEBUG:
-    shuffleReps = 25
+    shuffleReps = 30
 else:
     shuffleReps = 1000
 
@@ -59,20 +63,18 @@ colorShuffle = (0, bright, 0)           # green
 colorOff = (0, 0, 0)                    # no lights
 colorHole = (bright, 0, bright)         # purple
 
-uplt = [True, False, False, True, True, False]
-uprt = [False, False, True, True, True, False]
-lolt = [True, False, False, False, True, True]
-lort = [False, False, True, False, True, True]
-vert = [False, False, False, True, True, True]
-horz = [True, False, True, False, True, False]
-blnk = [False, False, False, False, False, False]
+# uplt = [True, False, False, True, True, False]
+# uprt = [False, False, True, True, True, False]
+# lolt = [True, False, False, False, True, True]
+# lort = [False, False, True, False, True, True]
+# vert = [False, False, False, True, True, True]
+# horz = [True, False, True, False, True, False]
+# blnk = [False, False, False, False, False, False]
 
-patterns = [blnk, uplt, uprt, lolt, lort, vert, horz]
-
-cross = [True, False, True, True, True, True]
+cross = hole
 crosshole = [True, False, True, True, False, True]
 center = [False, False, False, False, True, False]
-hole = cross
+
 
 # sound clip index start and end values
 soundReset = [0, 6]
@@ -330,7 +332,7 @@ def shuffle(game, reps):
             for c in range(5):
                 showPattern(tiles[r][c], game[r][c], colorMatch)
         time.sleep(0.5)
-                
+
     # scale the requested repetitions by the chaos slider (0.0-1.0)
     chaosValue = chaos.value / 65536
     reps = int(reps * chaosValue)
@@ -535,43 +537,7 @@ def showAllLights():
 # r = row
 # c = column
 
-goal = [[[[0 for c in range(5)]
-        for r in range(5)]
-        for x in range(3)]
-        for d in range(8)]
-goalBegin = [[0 for x in range(3)] for x in range(8)]
-goalEnd = [[0 for x in range(3)] for x in range(8)]
 goalPieces = [[0 for x in range(3)] for x in range(8)]
-
-goal[7][0][0][0] = hole
-goal[7][0][0][1] = lort
-goal[7][0][0][2] = lolt
-goal[7][0][0][3] = uprt
-goal[7][0][0][4] = lolt
-goal[7][0][1][0] = horz
-goal[7][0][1][1] = uplt
-goal[7][0][1][2] = vert
-goal[7][0][1][3] = blnk
-goal[7][0][1][4] = vert
-goal[7][0][2][0] = lort
-goal[7][0][2][1] = lolt
-goal[7][0][2][2] = vert
-goal[7][0][2][3] = lort
-goal[7][0][2][4] = uplt
-goal[7][0][3][0] = vert
-goal[7][0][3][1] = uprt
-goal[7][0][3][2] = uplt
-goal[7][0][3][3] = uprt
-goal[7][0][3][4] = lolt
-goal[7][0][4][0] = uprt
-goal[7][0][4][1] = horz
-goal[7][0][4][2] = horz
-goal[7][0][4][3] = horz
-goal[7][0][4][4] = uplt
-
-goalBegin[7][0] = 3
-goalEnd[7][0] = 18
-goalPieces[0][0] = countNonBlanks(goal[0][0])
 
 # ----------------------------------------
 # Define misc stuff
@@ -623,7 +589,7 @@ while True:
     # Pick a game, copy to matrix and display the edge LEDs
     level, instance = chooseGame(level)
     if DEBUG:
-        level = 7
+        level = 0
         instance = 0
 
     for r in range(5):

@@ -7,8 +7,26 @@
 # Level 6 = 22 tiles
 # level 7 = 24 files
 
+uplt = [True, False, False, True, True, False]
+uprt = [False, False, True, True, True, False]
+lolt = [True, False, False, False, True, True]
+lort = [False, False, True, False, True, True]
+vert = [False, False, False, True, True, True]
+horz = [True, False, True, False, True, False]
+blnk = [False, False, False, False, False, False]
+
+hole = [True, False, True, True, True, True]
+
+
+goal = [[[[0 for c in range(5)]
+        for r in range(5)]
+        for x in range(3)]
+        for d in range(8)]
+goalBegin = [[0 for x in range(3)] for x in range(8)]
+goalEnd = [[0 for x in range(3)] for x in range(8)]
+
 # Level 0, instance 0
-goal[0][0][0][0] = blnk
+goal[0][0][0][0] = hole
 goal[0][0][0][1] = vert
 goal[0][0][0][2] = blnk
 goal[0][0][0][3] = blnk
@@ -59,28 +77,28 @@ goal[0][1][3][3] = lolt
 goal[0][1][3][4] = blnk
 goal[0][1][4][0] = blnk
 goal[0][1][4][1] = vert
-goal[0][1][4][2] = blnk
+goal[0][1][4][2] = hole
 goal[0][1][4][3] = vert
 goal[0][1][4][4] = blnk
-goalBegin[0][1] = 1
-goalEnd[0][1] = 17
+goalBegin[0][1] = 11
+goalEnd[0][1] = 13
 
 # Level 0, instance 2
 goal[0][2][0][0] = blnk
 goal[0][2][0][1] = blnk
 goal[0][2][0][2] = blnk
-goal[0][2][0][3] = horz
+goal[0][2][0][3] = vert
 goal[0][2][0][4] = blnk
 goal[0][2][1][0] = blnk
 goal[0][2][1][1] = blnk
 goal[0][2][1][2] = blnk
-goal[0][2][1][3] = horz
+goal[0][2][1][3] = vert
 goal[0][2][1][4] = blnk
 goal[0][2][2][0] = blnk
 goal[0][2][2][1] = blnk
 goal[0][2][2][2] = blnk
-goal[0][2][2][3] = horz
-goal[0][2][2][4] = blnk
+goal[0][2][2][3] = vert
+goal[0][2][2][4] = hole
 goal[0][2][3][0] = blnk
 goal[0][2][3][1] = blnk
 goal[0][2][3][2] = blnk
@@ -207,8 +225,8 @@ goal[2][0][4][1] = blnk
 goal[2][0][4][2] = blnk
 goal[2][0][4][3] = blnk
 goal[2][0][4][4] = blnk
-goalBegin[2][] = 17
-goalEnd[2][] = 18
+goalBegin[2][0] = 17
+goalEnd[2][0] = 18
 
 # Level 2, instance 1
 goal[2][1][0][0] = blnk
@@ -295,12 +313,8 @@ goal[3][0][4][1] = blnk
 goal[3][0][4][2] = blnk
 goal[3][0][4][3] = blnk
 goal[3][0][4][4] = blnk
-goalBegin[3][] = 0
-goalEnd[3][] = 0
-
-
-
-
+goalBegin[3][0] = 0
+goalEnd[3][0] = 0
 
 
 
@@ -312,7 +326,7 @@ goal[7][0][0][4] = lolt
 goal[7][0][1][0] = horz
 goal[7][0][1][1] = uplt
 goal[7][0][1][2] = vert
-goal[7][0][1][3] = blnk
+goal[7][0][1][3] = hole
 goal[7][0][1][4] = vert
 goal[7][0][2][0] = lort
 goal[7][0][2][1] = lolt
@@ -329,5 +343,6 @@ goal[7][0][4][1] = horz
 goal[7][0][4][2] = horz
 goal[7][0][4][3] = horz
 goal[7][0][4][4] = uplt
-goalBegin[0][0] = 3
-goalEnd[0][0] = 18
+
+goalBegin[7][0] = 3
+goalEnd[7][0] = 18
