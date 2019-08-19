@@ -330,7 +330,10 @@ def shuffle(game, reps):
         time.sleep(0.05)
         for r in range(5):
             for c in range(5):
-                showPattern(tiles[r][c], game[r][c], colorMatch)
+                if game[r][c] != hole:
+                    showPattern(tiles[r][c], game[r][c], colorMatch)
+                else:
+                    showPattern(tiles[r][c], game[r][c], colorHole)
         time.sleep(0.5)
 
     # scale the requested repetitions by the chaos slider (0.0-1.0)
