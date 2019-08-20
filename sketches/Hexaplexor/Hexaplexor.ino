@@ -413,6 +413,7 @@ void loop() {
               if (buttonState[i] == false) {
                 triggerWheels(i);
                 lastInteraction = millis();
+                localActivitySeen();
               }
               buttonState[i] = true;
             } else {
