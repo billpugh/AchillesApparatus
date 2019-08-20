@@ -25,7 +25,7 @@ while True:
     time.sleep(0.1)
     # This call will set the points for this wedge
     ear.set_points(int(time.monotonic()) % 9)
-    ear.set_points(4)
+    ear.set_points(1)
     #  ear.set_points_bits(129)
 
     print('{} {} {}'.format(

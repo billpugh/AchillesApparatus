@@ -5,8 +5,44 @@ import board
 from digitalio import DigitalInOut, Direction, Pull
 from analogio import AnalogIn
 from eartohear import EarToHear
+from mazes import goal, goalBegin, goalEnd, \
+    uplt, uprt, lolt, lort, vert, horz, blnk, hole
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# TO DO
+#   - Use time of day to set the light levels
+#       + LIGHT_NIGHT
+#       + LIGHT_NAUTICAL_TWILIGHT
+#       + LIGHT_CIVIL_TWILIGHT
+#       + LIGHT_DUSK_DAWN
+#       + LIGHT_DAY
+#   - Do something different with:
+#       + QUIET (play random noises)
+#       + ACTIVE (game play)
+#       + CHARGED (outer to inner, faster & faster)
+#       + DISCHARGING (inner to outer, faster & faster, flash, fade)
+#       + RESET (stop game, flash code)
+#       + NOT_RECEIVED (error code: Edge all red)
+#   + Show pattern while shuffling
+#   + Review audio
+#   + Blink hole and selected tile if button is pressed for illegal move
+#   + Mazes
+#       + Level 0
+#       + Level 0
+#       + Level 1
+#       + Level 2
+#       + Level 3
+#       + Level 4
+#       + Level 5
+#       + Level 6
+#       + Level 7
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 DEBUG = True
+
+if DEBUG:
+    myI2C = 0x72    # hexaplexor
+else:
+    myI2C = 0x74    # tilemaze
 
 last_system_mode = None
 last_day_segment = None
@@ -15,45 +51,30 @@ level = 0
 
 # This will be multiplied by difficulty: 0.0 - 1.0
 if DEBUG:
-    shuffleReps = 20
+    shuffleReps = 30
 else:
     shuffleReps = 1000
 
-Dred = (255, 0, 0)
-Dwhite = (255, 255, 255)
-Dblue = (0, 0, 255)
-Dyellow = (255, 255, 0)
-Dgreen = (0, 255, 0)
-off = (0, 0, 0)
+bright = 5
+colorMove = (bright, 0, 0)              # red
+colorPattern = (0, 0, bright)           # blue (tile does NOT match goal)
+colorMatch = (bright, bright, bright)   # white (tile matches goal)
+colorShuffle = (0, bright, 0)           # green
+colorOff = (0, 0, 0)                    # no lights
+colorHole = (bright, 0, bright)         # purple
 
-brightness = 50
-Nred = (brightness, 0, 0)
-Nwhite = (brightness, brightness, brightness)
-Nblue = (0, 0, brightness)
-Nyellow = (brightness, brightness, 0)
-Ngreen = (0, brightness, 0)
+# uplt = [True, False, False, True, True, False]
+# uprt = [False, False, True, True, True, False]
+# lolt = [True, False, False, False, True, True]
+# lort = [False, False, True, False, True, True]
+# vert = [False, False, False, True, True, True]
+# horz = [True, False, True, False, True, False]
+# blnk = [False, False, False, False, False, False]
 
-colorMove = Nred             # blink when the tile moves
-colorPattern = Nblue         # the tile pattern matches the goal pattern
-colorMatch = Nwhite          # the tile pattern does NOT match the goal pattern
-colorPreshuffle = Nyellow    # blink before shuffle
-colorPostshuffle = Ngreen    # blink after shuffle
-colorOff = off              # no lights
-
-uplt = [True, False, False, True, True, False]
-uprt = [False, False, True, True, True, False]
-lolt = [True, False, False, False, True, True]
-lort = [False, False, True, False, True, True]
-vert = [False, False, False, True, True, True]
-horz = [True, False, True, False, True, False]
-blnk = [False, False, False, False, False, False]
-hole = blnk
-
-patterns = [blnk, uplt, uprt, lolt, lort, vert, horz]
-
-cross = [True, False, True, True, True, True]
+cross = hole
 crosshole = [True, False, True, True, False, True]
 center = [False, False, False, False, True, False]
+
 
 # sound clip index start and end values
 soundReset = [0, 6]
@@ -67,8 +88,8 @@ soundSuccess = [80, 88]
 soundError = [90, 93]
 
 # -------------------------------------------------------
-# Set up I2C with address assigned by Bill. (Hexaplexor=72
-ear = EarToHear(board.SCL, board.SDA, 0x74)
+# Set up I2C with address assigned by Bill.
+ear = EarToHear(board.SCL, board.SDA, myI2C)
 
 # ----------------------------------------------
 # Define the local reset button input
@@ -165,7 +186,32 @@ tiles[4] = [
 
 # ----------------------------------------------------------
 # Define the edge light strip. NOTE: D54 -> A8
-edge = neopixel.NeoPixel(board.A15, 20, auto_write=False)
+# edge = neopixel.NeoPixel(board.A15, 20, auto_write=False)
+edge = neopixel.NeoPixel(board.A15, 20, auto_write=True)
+
+def changeBrightness():
+    global colorMove, colorPattern, colorMatch, colorShuffle, colorHole
+
+    if last_light_level == EarToHear.LIGHT_DAY:
+        bright = 200
+    elif last_light_level == EarToHear.LIGHT_DUSK_DAWN:
+        bright = 100
+    elif last_light_level == EarToHear.CIVIL_TWILIGHT:
+        bright = 50
+    elif last_light_level == EarToHear.NAUTICAL_TWILIGHT:
+        bright = 40
+    elif last_light_level == EarToHear.NIGHT:
+        bright = 25
+    else:
+        bright = 25
+    if DEBUG:
+        bright = 5
+
+    colorMove = (bright, 0, 0)              # red
+    colorPattern = (0, 0, bright)           # blue (tile does NOT match goal)
+    colorMatch = (bright, bright, bright)   # white (tile matches goal)
+    colorShuffle = (0, 0, bright)           # green
+    colorHole = (bright, 0, bright)         # purple
 
 # ------------------------------------------------------------------
 # For the tile, set the LEDs to specifed pattern and indicated color
@@ -175,7 +221,7 @@ def showPattern(tile, pattern, color):
         if led:
             tile[index] = color
         else:
-            tile[index] = off
+            tile[index] = colorOff
     tile.show()
 
 def playSuccessLights(game):
@@ -185,37 +231,39 @@ def playSuccessLights(game):
                 showPattern(
                     tiles[r][c],
                     matrix[r][c],
-                    Dwhite)
-                for e in range(20):
-                    edge[e] = Dblue
-                    edge.show
-                time.sleep(0.25)
+                    colorMatch)
+        for e in range(20):
+            edge[e] = colorPattern
+        time.sleep(0.25)
+        for r in range(5):
+            for c in range(5):
                 showPattern(
                     tiles[r][c],
                     matrix[r][c],
-                    off)
-                for e in range(20):
-                    edge[e] = off
-                    edge.show
-                time.sleep(0.1)
+                    colorOff)
+        for e in range(20):
+            edge[e] = colorOff
+        time.sleep(0.1)
+        for r in range(5):
+            for c in range(5):
                 showPattern(
                     tiles[r][c],
                     matrix[r][c],
-                    Dblue)
-                for e in range(20):
-                    edge[e] = Dwhite
-                    edge.show
-                time.sleep(0.25)
+                    colorPattern)
+        for e in range(20):
+            edge[e] = colorMatch
+        time.sleep(0.25)
+        for r in range(5):
+            for c in range(5):
                 showPattern(
                     tiles[r][c],
                     matrix[r][c],
-                    off)            
-                for e in range(20):
-                    edge[e] = off
-                    edge.show
-                time.sleep(0.1)
+                    colorOff)
+        for e in range(20):
+            edge[e] = colorOff
+        time.sleep(0.1)
     clearBoard()
-    
+
 # Print configuration of matrix
 def printPattern(matrix):
     for r in range(5):
@@ -234,6 +282,9 @@ def printPattern(matrix):
                 print("VT  ", end="")
             if (matrix[r][c] == horz):
                 print("HZ  ", end="")
+            if (matrix[r][c] == hole):
+                print("XX  ", end="")
+
         print("")
     print("")
 
@@ -241,11 +292,11 @@ def clearBoard():
     if DEBUG:
         print("Clear board")
     for e in range(20):
-        edge[e] = off
+        edge[e] = colorOff
         edge.show
     for r in range(5):
         for c in range(5):
-            showPattern(tiles[r][c], cross, off)
+            showPattern(tiles[r][c], cross, colorOff)
 
 # --------------------------------------------
 # count the number of non-blank patterns
@@ -265,18 +316,32 @@ def shuffle(game, reps):
     nC = 0
     hR = 0
     hC = 0
-    # find a hole
+    # find the hole and show the pattern
     for r in range(5):
         for c in range(5):
-            if game[r][c] == blnk:
+            if game[r][c] == hole:
                 hR = r
                 hC = c
-            break
+    # flash the pattern 10 times
+    for x in range(10):
+        for r in range(5):
+            for c in range(5):
+                showPattern(tiles[r][c], game[r][c], colorOff)
+        time.sleep(0.05)
+        for r in range(5):
+            for c in range(5):
+                if game[r][c] != hole:
+                    showPattern(tiles[r][c], game[r][c], colorMatch)
+                else:
+                    showPattern(tiles[r][c], game[r][c], colorHole)
+        time.sleep(0.5)
+
     # scale the requested repetitions by the chaos slider (0.0-1.0)
     chaosValue = chaos.value / 65536
     reps = int(reps * chaosValue)
     if DEBUG:
         print("Chaos Value, reps:", chaosValue, reps)
+        time.sleep(3.0)
     for r in range(reps):
         d = random.randint(0, 3)
         # Move down
@@ -301,7 +366,7 @@ def shuffle(game, reps):
                 nC = hC+1
         if (nR != hR) or (nC != hC):
             game[hR][hC] = game[nR][nC]
-            game[nR][nC] = blnk
+            game[nR][nC] = hole
             if (game[hR][hR] != blnk):
                 if DEBUG:
                     print("Clip:",
@@ -309,29 +374,20 @@ def shuffle(game, reps):
                 ear.play_audio(
                     random.randint(soundShuffle[0], soundShuffle[1]))
                 # blink the pattern in the old and new spaces
-                showPattern(tiles[nR][nC], game[hR][hC], colorPreshuffle)
-                showPattern(tiles[hR][hC], game[hR][hC], colorPostshuffle)
-                time.sleep(0.25)
-                showPattern(tiles[nR][nC], game[hR][hC], off)
-                showPattern(tiles[hR][hC], game[hR][hC], off)
+                showPattern(tiles[nR][nC], game[hR][hC], colorShuffle)
+                time.sleep(0.02)
+                showPattern(tiles[hR][hC], game[hR][hC], colorShuffle)
+                time.sleep(0.05)
+                showPattern(tiles[nR][nC], hole, colorHole)
+                if game[hR][hC] == goal[level][instance][hR][hC]:
+                    showPattern(tiles[hR][hC], game[hR][hC], colorMatch)
+                else:
+                    showPattern(tiles[hR][hC], game[hR][hC], colorPattern)
+                time.sleep(.1)
             hR = nR
             hC = nC
             printPattern(game)
     return hR, hC
-
-# -----------------------------------------------------------
-# Find the holes. Return location of last one found
-def findHoles():
-    hR = 0
-    hC = 0
-    hNum = 0
-    for r in range(5):
-        for c in range(5):
-            if sense[r][c].value:
-                hNum = hNum + 1
-                hR = r
-                hC = c
-    return hNum, hR, hC
 
 # -----------------------------------------------------------
 # Move tiles up and down
@@ -343,7 +399,7 @@ def moveRows(game, dist, ohR, ohC):
     for r in range(0, abs(dist)):
         game[ohR+r*dir][ohC] = \
             game[ohR+(r+1)*dir][ohC]
-        game[ohR+(r+1)*dir][ohC] = blnk
+        game[ohR+(r+1)*dir][ohC] = hole
         showPattern(
             tiles[ohR+r*dir][ohC],
             game[ohR+r*dir][ohC],
@@ -372,7 +428,7 @@ def moveCols(game, dist, ohR, ohC):
     for c in range(0, abs(dist)):
         game[ohR][ohC+c*dir] = \
             game[ohR][ohC+(c+1)*dir]
-        game[ohR][ohC+(c+1)*dir] = blnk
+        game[ohR][ohC+(c+1)*dir] = hole
         showPattern(
             tiles[ohR][ohC+c*dir],
             game[ohR][ohC+c*dir],
@@ -401,10 +457,12 @@ def matchRealityToGoal(game, target):
     for r in range(5):
         for c in range(5):
             # count the game pieces
-            if (game[r][c] != blnk):
+            if (game[r][c] != blnk and game[r][c] != hole):
                 p = p + 1
             # do they match?
-            if (game[r][c] == target[r][c]):
+            if (game[r][c] == hole):
+                showPattern(tiles[r][c], game[r][c], colorHole)
+            elif (game[r][c] == target[r][c]):
                 showPattern(tiles[r][c], game[r][c], colorMatch)
                 # and they are not blank?
                 if (game[r][c] != blnk):
@@ -414,23 +472,6 @@ def matchRealityToGoal(game, target):
 
     # send back a percentage completion
     return p, m
-
-def processMasterReset():
-    if DEBUG:
-        print("system_mode = MASTER RESET")
-    # ??? ear.play_audio(soundSysReset)
-    # play flashing red pattern then red X
-    ear.set_points_bits(0)
-    time.sleep(5.0)
-
-def processLocalReset():
-    if DEBUG:
-        print("LOCAL RESET")
-    ear.play_audio(
-        random.randint(soundReset[0], soundReset[1]))
-    clearBoard()
-    # show a fancy pattern
-    time.sleep(3.0)
 
 def chooseGame(lev):
     # difficulty = value 0.0 = 1.0
@@ -447,6 +488,47 @@ def chooseGame(lev):
 
     return lev, instance
 
+def processMasterReset():
+    if DEBUG:
+        print("system_mode = MASTER RESET")
+
+    clearBoard
+    # +++++ display big red X
+    ear.set_points_bits(0)
+
+def processLocalReset():
+    if DEBUG:
+        print("LOCAL RESET")
+    ear.play_audio(
+        random.randint(soundReset[0], soundReset[1]))
+    clearBoard
+    # ++++++++++ flash all white on & off
+
+def checkReset():
+    global current_system_mode
+    localReset = False
+    masterReset = False
+
+    localReset = resetButton.value
+    if localReset:
+        processLocalReset()
+
+    ear.check_i2c()
+    current_system_mode = ear.system_mode
+    masterReset = ear.system_mode == EarToHear.MODE_RESET
+    if masterReset:
+        processMasterReset()
+
+    return localReset or masterReset
+
+# TEST THE LIGHTS
+def showAllLights():
+    for r in range(5):
+        for c in range(5):
+            showPattern(tiles[r][c], cross, colorMove)
+    for e in range(20):
+        edge[e] = colorPattern
+
 # -----------------------------------------------------------
 # Setup mazes
 # goal = desired ending pattern
@@ -458,50 +540,13 @@ def chooseGame(lev):
 # r = row
 # c = column
 
-goal = [[[[0 for c in range(5)]
-        for r in range(5)]
-        for x in range(3)]
-        for d in range(8)]
-goalBegin = [[0 for x in range(3)] for x in range(8)]
-goalEnd = [[0 for x in range(3)] for x in range(8)]
 goalPieces = [[0 for x in range(3)] for x in range(8)]
-
-goal[0][0][0][0] = blnk
-goal[0][0][0][1] = lort
-goal[0][0][0][2] = lolt
-goal[0][0][0][3] = uprt
-goal[0][0][0][4] = lolt
-goal[0][0][1][0] = horz
-goal[0][0][1][1] = uplt
-goal[0][0][1][2] = vert
-goal[0][0][1][3] = uplt  # should be blnk
-goal[0][0][1][4] = vert
-goal[0][0][2][0] = lort
-goal[0][0][2][1] = lolt
-goal[0][0][2][2] = vert
-goal[0][0][2][3] = lort
-goal[0][0][2][4] = uplt
-goal[0][0][3][0] = vert
-goal[0][0][3][1] = uprt
-goal[0][0][3][2] = uplt
-goal[0][0][3][3] = uprt
-goal[0][0][3][4] = lolt
-goal[0][0][4][0] = uprt
-goal[0][0][4][1] = horz
-goal[0][0][4][2] = horz
-goal[0][0][4][3] = horz
-goal[0][0][4][4] = uplt
-
-goalBegin[0][0] = 3
-goalEnd[0][0] = 18
-goalPieces[0][0] = countNonBlanks(goal[0][0])
 
 # ----------------------------------------
 # Define misc stuff
 # ----------------------------------------
-countMultiHoles = 0
-countMultiHolesLimit = 1_000
-
+r = 0
+c = 0
 numHoles = 0
 oldHoleRow = 0
 oldHoleCol = 0
@@ -512,7 +557,8 @@ cdist = 0
 pieces = 0
 matches = 0
 progress = 0.0
-localReset = False
+reset = False
+press = False
 
 # Define the matrix which tracks the positions of patterns on the board
 matrix = [[0 for r in range(5)] for c in range(5)]
@@ -543,144 +589,98 @@ while True:
         processMasterReset()
         ear.check_i2c()
 
-    # Pick a game and copy to matrix
+    # Pick a game, copy to matrix and display the edge LEDs
     level, instance = chooseGame(level)
     if DEBUG:
         level = 0
         instance = 0
+
     for r in range(5):
         for c in range(5):
             matrix[r][c] = goal[level][instance][r][c]
+    edge[goalBegin[level][instance]] = colorMatch
+    edge[goalEnd[level][instance]] = colorMatch
 
     # -------------------------------------------------------------------
     # shuffle the tiles
+    # -------------------------------------------------------------------
     oldHoleRow, oldHoleCol = shuffle(matrix, shuffleReps)
+    pieces, matches = matchRealityToGoal(matrix, goal[level][instance])
     if DEBUG:
         print("Old row & col:", oldHoleRow, oldHoleCol)
-
-    # Find physical hole
-    if not DEBUG:
-        numHoles, newHoleRow, newHoleCol = findHoles()
-    else:
-        numHoles = 1
-        newHoleRow = int(input("Physical hole row: "))
-        newHoleCol = int(input("Physical hole col: "))
-    if DEBUG:
-        print("New row & col:", newHoleRow, newHoleCol)
-
-    if numHoles == 0:
-        if DEBUG:
-            print("No holes!!!!")
-    elif numHoles > 1:
-        if DEBUG:
-            print("Tiles not aligned")
-    else:
-        # move virtual hole to match physical hole
-        if newHoleRow-oldHoleRow != 0:
-            moveRows(matrix, newHoleRow-oldHoleRow, oldHoleRow, oldHoleCol)
-            oldHoleRow = newHoleRow
-            matrix[oldHoleRow][oldHoleCol] = blnk
-        if newHoleCol-oldHoleCol != 0:
-            moveCols(matrix, newHoleCol-oldHoleCol, oldHoleRow, oldHoleCol)
-            oldHoleCol = newHoleCol
-            matrix[oldHoleRow][oldHoleCol] = blnk
-
-    # ---------------------------------
-    # Check match agains goal
-    pieces, match = matchRealityToGoal(matrix, goal[level][instance])
-
-    if DEBUG:
         print("Matrix")
         printPattern(matrix)
         print("Goal")
         printPattern(goal[level][instance])
 
+    localReset = False
     # ========================================================
     # Game play loop
     # ========================================================
     while True:
 
-        localReset = False
-
-        ear.check_i2c()
-
-        current_system_mode = ear.system_mode
-        current_day_segment = ear.day_time
-        current_light_level = ear.light_level
-
-        # Abort the game if master says RESET
-        if ear.system_mode == EarToHear.MODE_RESET:
-            processMasterReset()
+        if checkReset():
             break
 
-        # Abort the game if local reset button is pushed
-        localReset = resetButton.value
-        if localReset:
-            processLocalReset()
-            break
-
-        # -----------------------------------------------
-        # look for physical holes in the game table
-        # numHoles, newHoleRow, newHoleCol = findHoles()
-        # +++++++ do it manually for now
         if DEBUG:
             print("Old: ", oldHoleRow, ",", oldHoleCol)
-        numHoles = 1
-        newHoleRow = int(input("New row: "))
-        newHoleCol = int(input("New col: "))
-
-        # If num holes > 1, then mis-alignment or errors.
-        # Count 'em for awhile and then complain
-        if (numHoles > 1):
-            countMultiHoles = countMultiHoles + 1
-            if (countMultiHoles > countMultiHolesLimit):
-                if DEBUG:
-                    print(random.randint(soundError[0], soundError[1]))
-                ear.play_audio(random.randint(soundError[0], soundError[1]))
-                countMultiHoles = int(countMultiHoles/2)
-
+            newHoleRow = int(input("New row: "))
+            newHoleCol = int(input("New col: "))
+            print("New: ", newHoleRow, ",", newHoleCol)
         else:
-            countMultiHoles = 0
-            if DEBUG:
-                print("Old: ", oldHoleRow, ",", oldHoleCol)
-            if DEBUG:
-                print("New: ", newHoleRow, ",", newHoleCol)
-            rdist = newHoleRow - oldHoleRow
-            cdist = newHoleCol - oldHoleCol
-            # Did anything move?
-            if (rdist == 0) and (cdist == 0):
-                if DEBUG:
-                    print("No change:", oldHoleRow, ",", oldHoleCol)
-            elif (rdist != 0) and (cdist != 0):
-                # hole made impossible jump
-                ear.play_audio(
-                    random.randint(soundError[0], soundError[1]))
-                if DEBUG:
-                    print(
-                        "Error:",
-                        random.randint(soundError[0], soundError[1]))
+            # Look for button presses
+            press = False
+            while not (press or reset):
+                reset = checkReset()
+                for r in range(5):
+                    for c in range(5):
+                        press = sense[r][c].value
+                        if press:
+                            break
+                    if press:
+                        break
+            newHoleRow = r
+            newHoleCol = c
 
-            else:
-                if rdist != 0:
-                    moveRows(matrix, rdist, oldHoleRow, oldHoleCol)
-                else:  # must be cdist > 0
-                    moveCols(matrix, cdist, oldHoleRow, oldHoleCol)
-                    #            matrix[newHoleRow][newHoleCol] = blnk
-                showPattern(
-                    tiles[newHoleRow][newHoleCol],
-                    matrix[newHoleRow][newHoleCol],
-                    off)
-                oldHoleRow = newHoleRow
-                oldHoleCol = newHoleCol
-                
+        rdist = newHoleRow - oldHoleRow
+        cdist = newHoleCol - oldHoleCol
+
+        # Did anything move?
+        if (rdist == 0) and (cdist == 0):
+
+            # +++++++ Blink the tile
+
+            if DEBUG:
+                print("No change:", oldHoleRow, ",", oldHoleCol)
+
+        elif (rdist != 0) and (cdist != 0):
+            # hole made impossible jump
+            # +++++++++++ blink the tile red
+            ear.play_audio(
+                random.randint(soundError[0], soundError[1]))
+            if DEBUG:
+                print(
+                    "Error:",
+                    random.randint(soundError[0], soundError[1]))
+        else:
+            if rdist != 0:
+                moveRows(matrix, rdist, oldHoleRow, oldHoleCol)
+            else:  # must be cdist > 0
+                moveCols(matrix, cdist, oldHoleRow, oldHoleCol)
+            showPattern(
+                tiles[newHoleRow][newHoleCol],
+                matrix[newHoleRow][newHoleCol],
+                colorOff)
+            oldHoleRow = newHoleRow
+            oldHoleCol = newHoleCol
+
+        # How are we doing?
+        pieces, matches = matchRealityToGoal(matrix, goal[level][instance])
         if DEBUG:
             print("Goal")
             printPattern(goal[level][instance])
-        pieces, matches = matchRealityToGoal(matrix, goal[level][instance])
-        if DEBUG:
             print("Progress: ", matches, "out of", pieces)
 
-        # Is it solved yet?
         # +++++++++++++ Find better clips to signify progress sounds
         progress = matches/pieces
         if (matches == pieces):
@@ -690,8 +690,8 @@ while True:
             ear.play_audio(random.randint(soundSuccess[0], soundSuccess[1]))
             playSuccessLights(matrix)
             ear.set_points(level)
-            
             break
+
         elif progress > 0.9:
             if DEBUG:
                 print("Progress 90%:",
