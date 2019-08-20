@@ -98,22 +98,21 @@ class EarToHear(object):
         return EarToHear.LIGHT_LEVELS[self.light_level]
 
     def play_audio(self, audio_track, audio_global=False):
-        self.last_activity = time.monotonic()
         self.audio_track = audio_track
         self.audio_global = audio_global
         self.audio_action = EarToHear.AUDIO_PLAY
 
     def control_audio(self, audio_action):
-        self.last_activity = time.monotonic()
         self.audio_action = audio_action
 
     def set_points(self, value):
-        self.last_activity = time.monotonic()
         self.points_activated = 255 >> (8 - (value % 9))
 
     def set_points_bits(self, value):
-        self.last_activity = time.monotonic()
         self.points_activated = int(value) % 255
+
+    def local_activity_seen():
+        self.last_activity = time.monotonic()
 
     def check_i2c(self):
         status = False
