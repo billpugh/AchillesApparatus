@@ -95,6 +95,7 @@ ear = EarToHear(board.SCL, board.SDA, myI2C)
 # Define the local reset button input
 #  attach D1 to switch post near LED
 #  attach GND to post on back of switch
+# default for sense[][].value = FALSE
 # ----------------------------------------------
 resetButton = DigitalInOut(board.D1)
 resetButton.direction = Direction.INPUT
@@ -102,6 +103,7 @@ resetButton.pull = Pull.UP
 
 # -----------------------------------------------------------
 # Define the pull-up inputs that sense if a tile is in place
+# small matrix switches: default for sense[][].value = TRUE
 # -----------------------------------------------------------
 sense = [[0 for r in range(5)] for c in range(5)]
 
