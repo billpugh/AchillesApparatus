@@ -1,7 +1,7 @@
 
 #include <OctoWS2811.h>
 
-const int ledsPerStrip = 174+4*60;
+const int ledsPerStrip = 174 + 4 * 60;
 
 DMAMEM int displayMemory[ledsPerStrip * 6];
 int drawingMemory[ledsPerStrip * 6];
@@ -16,15 +16,15 @@ int rainbowColors[180];
 void setup() {
   pinMode(1, OUTPUT);
   digitalWrite(1, HIGH);
- Serial.begin(115200);
-  while (!Serial) delay(10);
+  Serial.begin(115200);
+  while (!Serial && millis() < 3000) delay(10);
   for (int i = 0; i < 180; i++) {
     int hue = i * 2;
     int saturation = 100;
     int lightness = 50;
     // pre-compute the 180 rainbow colors
     rainbowColors[i] = makeColor(hue, saturation, lightness);
-    
+
   }
   digitalWrite(1, LOW);
   leds.begin();
@@ -51,8 +51,8 @@ void rainbow(int phaseShift, int cycleTime)
   int color, x, y, offset, wait;
   wait = cycleTime * 1000 / ledsPerStrip;
   for (color = 0; color < 180; color++) {
-   int maxLED = (millis() / 300) % 2 == 0 ? 174 : 173;
-   digitalWrite(1, HIGH);
+    int maxLED = (millis() / 300) % 2 == 0 ? 174 : 173;
+    digitalWrite(1, HIGH);
     for (y = 0; y < 8; y++) {
       for (x = 0; x < ledsPerStrip; x++) {
 
@@ -60,7 +60,12 @@ void rainbow(int phaseShift, int cycleTime)
         leds.setPixel(x + y * ledsPerStrip, rainbowColors[index]);
       }
       if ((millis() / 300) % 2 == 0 )
-         leds.setPixel(173 + y * ledsPerStrip, 0);
+        leds.setPixel(173 + y * ledsPerStrip, 0);
+    }
+    for (y = 0; y < 8; y++) {
+      for (x = 0; x <=y; x++)
+        leds.setPixel(x + y * ledsPerStrip, 0x404040);
+
     }
     leds.show();
     digitalWrite(1, LOW);
