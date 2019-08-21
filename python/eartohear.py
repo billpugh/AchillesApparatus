@@ -77,6 +77,7 @@ class EarToHear(object):
         self.audio_action = 0
         self.points_activated = 0
 
+        # data that comes from central
         self.time_since_global_boot = None
         self.time_since_global_activity = None
         self.system_mode = EarToHear.MODE_NOT_RECEIVED
@@ -98,23 +99,41 @@ class EarToHear(object):
         return EarToHear.LIGHT_LEVELS[self.light_level]
 
     def play_audio(self, audio_track, audio_global=False):
+        """
+        Play audio
+        """
         self.audio_track = audio_track
         self.audio_global = audio_global
         self.audio_action = EarToHear.AUDIO_PLAY
 
     def control_audio(self, audio_action):
+        """
+        Control currently playing audio
+        """
         self.audio_action = audio_action
 
     def set_points(self, value):
+        """
+        Set points, 0-8
+        """
         self.points_activated = 255 >> (8 - (value % 9))
 
     def set_points_bits(self, value):
+        """
+        Set point bits, 0-255
+        """
         self.points_activated = int(value) % 255
 
     def local_activity_seen():
+        """
+        Let central known there was local activity
+        """
         self.last_activity = time.monotonic()
 
     def check_i2c(self):
+        """
+        Send and receive messages from central
+        """
         status = False
         info = None
         request = self.slave.request()
