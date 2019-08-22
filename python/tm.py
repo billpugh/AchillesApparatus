@@ -2,6 +2,7 @@ import time
 import random
 import neopixel
 import board
+# import animator
 from digitalio import DigitalInOut, Direction, Pull
 from analogio import AnalogIn
 from eartohear import EarToHear
@@ -39,6 +40,8 @@ from mazes import goal, goalBegin, goalEnd, \
 
 DEBUG = True
 
+# anim = animator.Animator()
+
 if DEBUG:
     myI2C = 0x72    # hexaplexor
 else:
@@ -56,12 +59,13 @@ else:
     shuffleReps = 1000
 
 bright = 5
-colorMove = (bright, 0, 0)              # red
+colorEntry = (bright, bright, 0)        # yellow
+colorExit = (0, bright, 0)              # green
 colorPattern = (0, 0, bright)           # blue (tile does NOT match goal)
 colorMatch = (bright, bright, bright)   # white (tile matches goal)
-colorShuffle = (0, bright, 0)           # green
-colorOff = (0, 0, 0)                    # no lights
+colorMove = (bright, 0, 0)              # red
 colorHole = (bright, 0, bright)         # purple
+colorOff = (0, 0, 0)                    # no lights
 
 # uplt = [True, False, False, True, True, False]
 # uprt = [False, False, True, True, True, False]
@@ -72,6 +76,10 @@ colorHole = (bright, 0, bright)         # purple
 # blnk = [False, False, False, False, False, False]
 
 cross = hole
+top = [False, False, False, True, False, False]
+bottom = [False, False, False, False, False, True]
+left = [True, False, False, False, False, False]
+right = [False, False, True, False, False, False]
 crosshole = [True, False, True, True, False, True]
 center = [False, False, False, False, True, False]
 
@@ -192,10 +200,11 @@ tiles[4] = [
 edge = neopixel.NeoPixel(board.A15, 20, auto_write=True)
 
 def changeBrightness():
-    global colorMove, colorPattern, colorMatch, colorShuffle, colorHole
+    global colorEntry, colorExit, colorMove
+    global colorPattern, colorMatch, colorHole
 
     if last_light_level == EarToHear.LIGHT_DAY:
-        bright = 200
+        bright = 250
     elif last_light_level == EarToHear.LIGHT_DUSK_DAWN:
         bright = 100
     elif last_light_level == EarToHear.CIVIL_TWILIGHT:
@@ -209,10 +218,11 @@ def changeBrightness():
     if DEBUG:
         bright = 5
 
-    colorMove = (bright, 0, 0)              # red
+    colorEntry = (bright, bright, 0)        # yellow
+    colorExit = (0, bright, 0)              # green
     colorPattern = (0, 0, bright)           # blue (tile does NOT match goal)
     colorMatch = (bright, bright, bright)   # white (tile matches goal)
-    colorShuffle = (0, 0, bright)           # green
+    colorMove = (bright, 0, 0)              # red
     colorHole = (bright, 0, bright)         # purple
 
 # ------------------------------------------------------------------
@@ -336,7 +346,7 @@ def shuffle(game, reps):
                     showPattern(tiles[r][c], game[r][c], colorMatch)
                 else:
                     showPattern(tiles[r][c], game[r][c], colorHole)
-        time.sleep(0.5)
+        time.sleep(0.25)
 
     # scale the requested repetitions by the chaos slider (0.0-1.0)
     chaosValue = chaos.value / 65536
@@ -376,9 +386,9 @@ def shuffle(game, reps):
                 ear.play_audio(
                     random.randint(soundShuffle[0], soundShuffle[1]))
                 # blink the pattern in the old and new spaces
-                showPattern(tiles[nR][nC], game[hR][hC], colorShuffle)
+                showPattern(tiles[nR][nC], game[hR][hC], colorMove)
                 time.sleep(0.02)
-                showPattern(tiles[hR][hC], game[hR][hC], colorShuffle)
+                showPattern(tiles[hR][hC], game[hR][hC], colorMove)
                 time.sleep(0.05)
                 showPattern(tiles[nR][nC], hole, colorHole)
                 if game[hR][hC] == goal[level][instance][hR][hC]:
@@ -490,6 +500,22 @@ def chooseGame(lev):
 
     return lev, instance
 
+def getColor(tile):
+    color = colorOff
+    for index in range(6):
+        if tile[index] != colorOff:
+            color = tile[index]
+    print("getcolor", color)
+    return color
+
+def blinkTile(tile, tempPattern, color, oldPattern, oldColor):
+    for x in range(5):
+        showPattern(tile, tempPattern, color)
+        time.sleep(0.1)
+        showPattern(tile, tempPattern, colorOff)
+        time.sleep(0.05)
+    showPattern(tile, oldPattern, oldColor)
+
 def processMasterReset():
     if DEBUG:
         print("system_mode = MASTER RESET")
@@ -600,8 +626,8 @@ while True:
     for r in range(5):
         for c in range(5):
             matrix[r][c] = goal[level][instance][r][c]
-    edge[goalBegin[level][instance]] = colorMatch
-    edge[goalEnd[level][instance]] = colorMatch
+    edge[goalBegin[level][instance]] = colorEntry
+    edge[goalEnd[level][instance]] = colorExit
 
     # -------------------------------------------------------------------
     # shuffle the tiles
@@ -620,6 +646,7 @@ while True:
     # Game play loop
     # ========================================================
     while True:
+        # anim.update()
 
         if checkReset():
             break
@@ -651,9 +678,18 @@ while True:
 
         # Did anything move?
         if (rdist == 0) and (cdist == 0):
-
-            # +++++++ Blink the tile
-
+            currentColor = getColor(
+                tiles[oldHoleRow][oldHoleCol])
+            print("tiles:", tiles[oldHoleRow][oldHoleCol])
+            print("matrix:", matrix[oldHoleRow][oldHoleCol])
+            print("color:", currentColor)
+            currentPattern = matrix[oldHoleRow][oldHoleCol]
+            blinkTile(
+                tiles[oldHoleRow][oldHoleCol],
+                crosshole,
+                colorMove,
+                currentPattern,
+                currentColor)
             if DEBUG:
                 print("No change:", oldHoleRow, ",", oldHoleCol)
 
