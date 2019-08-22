@@ -7,11 +7,12 @@
 #include "sound.h"
 
 WedgeData wedges[] = {
-  //WedgeData("TestWedge", 0x71, 0),
-  //  WedgeData("PhonoSonic", 0x71, 0),
+
+  WedgeData("PhonoSonic", 0x71, 0),
   WedgeData("Hexaplexor",  0x72, 0, 1),
-  //WedgeData("HexaplexorHelper",  0x73, -1),
-  //  WedgeData("TileMaze",  0x74, 4)
+  WedgeData("HexaplexorHelper",  0x73, -1),
+  WedgeData("TileMaze",  0x74, 2),
+  WedgeData("Generator",  0x74, 3)
 };
 
 const size_t numWedges = sizeof(wedges) / sizeof(WedgeData);
@@ -24,7 +25,7 @@ void setup() {
   while (!Serial & millis() < 3000) delay(10);
 
   aalogf("Achilles Central, compiled %s, %s\n",
-       F(__DATE__), F(__TIME__));
+         F(__DATE__), F(__TIME__));
   //  int countdownMS = Watchdog.enable(14000);
   //  logf("Enabled the watchdog with max countdown of %d ms\n", countdownMS);
   initializeCentral();
