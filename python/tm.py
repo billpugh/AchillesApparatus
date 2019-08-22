@@ -508,11 +508,11 @@ def getColor(tile):
     print("getcolor", color)
     return color
 
-def blinkTile(tile, tempPattern, color, oldPattern, oldColor):
-    for x in range(5):
-        showPattern(tile, tempPattern, color)
+def blinkTile(tile, blinkPattern, color, reps, oldPattern, oldColor):
+    for x in range(reps):
+        showPattern(tile, blinkPattern, color)
         time.sleep(0.1)
-        showPattern(tile, tempPattern, colorOff)
+        showPattern(tile, blinkPattern, colorOff)
         time.sleep(0.05)
     showPattern(tile, oldPattern, oldColor)
 
@@ -645,49 +645,44 @@ while True:
     # ========================================================
     # Game play loop
     # ========================================================
+
+
     while True:
-        # anim.update()
-
-        if checkReset():
-            break
-
-        if not DEBUG:
-            print("Old: ", oldHoleRow, ",", oldHoleCol)
-            newHoleRow = int(input("New row: "))
-            newHoleCol = int(input("New col: "))
-            print("New: ", newHoleRow, ",", newHoleCol)
-        else:
-            # Look for button presses
-            press = False
-            while not (press or reset):
-                reset = checkReset()
-                for r in range(5):
-                    for c in range(5):
-                        press = not sense[r][c].value
-                        if press:
-                            if DEBUG:
-                                print("Button:", r, c)
-                            break
+        
+        # Look for button presses. Also check for resets
+        time.sleep(0.25)
+        press = False
+        reset = False
+        while not (press or reset):
+            for r in range(5):
+                for c in range(5):
+                    press = not sense[r][c].value
                     if press:
+                        newHoleRow = r
+                        newHoleCol = c
                         break
-            newHoleRow = r
-            newHoleCol = c
+                if press:
+                    break
+            reset = checkReset()
 
+        if reset:
+            break
+            
         rdist = newHoleRow - oldHoleRow
         cdist = newHoleCol - oldHoleCol
-
+        currentColor = getColor(
+            tiles[oldHoleRow][oldHoleCol])
+        currentPattern = matrix[oldHoleRow][oldHoleCol]
         # Did anything move?
+        print("Old:", oldHoleRow, oldHoleCol)
+        print("New:", newHoleRow, newHoleCol)
+
         if (rdist == 0) and (cdist == 0):
-            currentColor = getColor(
-                tiles[oldHoleRow][oldHoleCol])
-            print("tiles:", tiles[oldHoleRow][oldHoleCol])
-            print("matrix:", matrix[oldHoleRow][oldHoleCol])
-            print("color:", currentColor)
-            currentPattern = matrix[oldHoleRow][oldHoleCol]
             blinkTile(
                 tiles[oldHoleRow][oldHoleCol],
                 crosshole,
                 colorMove,
+                2,
                 currentPattern,
                 currentColor)
             if DEBUG:
@@ -695,7 +690,13 @@ while True:
 
         elif (rdist != 0) and (cdist != 0):
             # hole made impossible jump
-            # +++++++++++ blink the tile red
+            blinkTile(
+                tiles[newHoleRow][newHoleCol],
+                crosshole,
+                colorMove,
+                1,
+                currentPattern,
+                currentColor)
             ear.play_audio(
                 random.randint(soundError[0], soundError[1]))
             if DEBUG:
