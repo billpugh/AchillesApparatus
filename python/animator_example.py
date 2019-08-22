@@ -10,15 +10,15 @@ tile = neopixel.NeoPixel(board.D29, 6, auto_write=False)
 cross = [True, False, True, True, True, True]
 colorOff = (0, 0, 0)
 
-def draw_pattern(tile, pattern, color):
+def draw_pattern(strip, pattern, color):
     for index, led in enumerate(pattern):
         if led:
-            tile[index] = color
+            strip[index] = color
         else:
-            tile[index] = colorOff
-        tile.show()
+            strip[index] = colorOff
+        strip.show()
         print('DRAW PIXEL {}'.format(index))
-        yield 1  # wait 1 second
+        yield 1.0  # wait 1 second
 
 def draw_pattern_complete():
     print('DRAW PATTERN COMPLETE!')

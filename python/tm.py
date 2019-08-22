@@ -118,7 +118,7 @@ sense[1][2] = DigitalInOut(board.D9)
 sense[1][3] = DigitalInOut(board.D10)
 sense[1][4] = DigitalInOut(board.D11)
 sense[2][0] = DigitalInOut(board.D12)
-sense[2][1] = DigitalInOut(board.D13)
+sense[2][1] = DigitalInOut(board.A8)   # D13 doesn't work
 sense[2][2] = DigitalInOut(board.D14)
 sense[2][3] = DigitalInOut(board.D15)
 sense[2][4] = DigitalInOut(board.D16)
@@ -624,7 +624,7 @@ while True:
         if checkReset():
             break
 
-        if DEBUG:
+        if not DEBUG:
             print("Old: ", oldHoleRow, ",", oldHoleCol)
             newHoleRow = int(input("New row: "))
             newHoleCol = int(input("New col: "))
@@ -636,8 +636,10 @@ while True:
                 reset = checkReset()
                 for r in range(5):
                     for c in range(5):
-                        press = sense[r][c].value
+                        press = not sense[r][c].value
                         if press:
+                            if DEBUG:
+                                print("Button:", r, c)
                             break
                     if press:
                         break
