@@ -42,7 +42,7 @@ DEBUG = True
 
 # This will be multiplied by difficulty: 0.0 - 1.0
 shuffleScale = 100
-    
+
 # anim = animator.Animator()
 
 if DEBUG:
@@ -350,12 +350,12 @@ def shuffle(game):
     chaosValue = chaos.value / 65536
     reps = int(shuffleScale * chaosValue)
     if DEBUG:
-        print("Chaos Value, reps:", chaosValue, reps)    
+        print("Chaos Value, reps:", chaosValue, reps)
     if reps <= 4:
         reps = 5
         if DEBUG:
-            print("Reset to min reps", reps)      
-            
+            print("Reset to min reps", reps)
+
     # check to make sure something has moved (pieces != matches)
     p = 0
     m = 0
@@ -581,7 +581,8 @@ matches = 0
 progress = 0.0
 reset = False
 press = False
-levelsDone = [False, False, False, False, False, False, False, False]
+numLevelsDone = 0
+curLevel = 0
 
 # Define the matrix which tracks the positions of patterns on the board
 matrix = [[0 for r in range(5)] for c in range(5)]
@@ -590,22 +591,48 @@ matrix = [[0 for r in range(5)] for c in range(5)]
 # Main loop
 #   We get to the beginning of the loop when
 #       - reboot
-#       - puzzle solved
+#       - all levels solved
+#       - all levels solved
 #       - TM reset button pressed
 #       - master RESET
 # ===========================================================
+
 while True:
+
+    numLevelsDone = 0
+    levelsDone = [False, False, False, False, False, False, False, False]
 
     # =======================================================
     # Levels loop
     # =======================================================
-    for level in range(8):
+    while (numLevelsDone < 8):
         # --------------------------------------------------------------
+        # - set current level
         # - clear board
         # - check for reset from master
         # - choose a game based on previous level and complexity slider
         # - assign the game to the work matrix
         # - shuffle the matrix depending on chaos slider
+        
+        # set starting level from 0 to 7 based on Complexity slider
+        diffSlider = difficulty.value / 65536
+        level = int(diffSlider * 8)            
+        
+        if DEBUG:
+            print("diff Slider", diffSlider)
+            print("Initial level", level)
+            print("Num Levels Done", numLevelsDone)
+            print("Levels done", levelsDone)
+
+        while levelsDone[level]:
+            level += 1
+            if level > 7:
+                level = 0
+
+        instance = random.randint(0, 2)
+        if DEBUG:
+            print("Current level", level)
+            print("Instanace", instance)
 
         clearBoard()
         ear.check_i2c()
@@ -615,8 +642,9 @@ while True:
             processMasterReset()
             ear.check_i2c()
 
-        instance = random.randint(0, 2)
-
+        # -------------------------------------------------------------------
+        # copy the selected maze (goal) into the working matrix
+        # -------------------------------------------------------------------
         for r in range(5):
             for c in range(5):
                 matrix[r][c] = goal[level][instance][r][c]
@@ -627,7 +655,7 @@ while True:
         # shuffle the tiles
         # -------------------------------------------------------------------
         oldHoleRow, oldHoleCol = shuffle(matrix)
-        # pieces, matches = matchRealityToGoal(matrix, goal[level][instance])
+
         if DEBUG:
             print("Old row & col:", oldHoleRow, oldHoleCol)
             print("Matrix")
@@ -748,3 +776,6 @@ while True:
                 ear.play_audio(
                     random.randint(
                         soundProgress[0], soundProgress[1]))
+
+        levelsDone[level] = True
+        numLevelsDone += 1
