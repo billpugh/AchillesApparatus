@@ -23,37 +23,29 @@ from mazes import goal, goalBegin, goalEnd, \
 #       + DISCHARGING (inner to outer, faster & faster, flash, fade)
 #       + RESET (stop game, flash code)
 #       + NOT_RECEIVED (error code: Edge all red)
-#   + Show pattern while shuffling
 #   + Review audio
-#   + Blink hole and selected tile if button is pressed for illegal move
-#   + Mazes
-#       + Level 0
-#       + Level 0
-#       + Level 1
-#       + Level 2
-#       + Level 3
-#       + Level 4
-#       + Level 5
-#       + Level 6
-#       + Level 7
+#   + Track errors and blow up if too many
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 DEBUG = True
 
 # This will be multiplied by difficulty: 0.0 - 1.0
-shuffleScale = 100
+shuffleScale = 250
 
 # anim = animator.Animator()
 
+# -------------------------------------------------------
+# Set up I2C with address assigned by Bill.
+# -------------------------------------------------------
 if DEBUG:
     myI2C = 0x72    # hexaplexor
 else:
     myI2C = 0x74    # tilemaze
+ear = EarToHear(board.SCL, board.SDA, myI2C)
 
 last_system_mode = None
 last_day_segment = None
 last_light_level = None
-level = 0
 
 bright = 5
 colorEntry = (bright, bright, 0)        # yellow
@@ -71,13 +63,14 @@ colorOff = (0, 0, 0)                    # no lights
 # vert = [False, False, False, True, True, True]
 # horz = [True, False, True, False, True, False]
 # blnk = [False, False, False, False, False, False]
+# hole = [True, False, True, True, True, True]
 
 cross = hole
 top = [False, False, False, True, False, False]
 bottom = [False, False, False, False, False, True]
 left = [True, False, False, False, False, False]
 right = [False, False, True, False, False, False]
-crosshole = [True, False, True, True, False, True]
+nocenter = [True, False, True, True, False, True]
 center = [False, False, False, False, True, False]
 
 
@@ -91,10 +84,6 @@ soundShuffle = [50, 57]
 soundProgress = [70, 79]
 soundSuccess = [80, 88]
 soundError = [90, 93]
-
-# -------------------------------------------------------
-# Set up I2C with address assigned by Bill.
-ear = EarToHear(board.SCL, board.SDA, myI2C)
 
 # ----------------------------------------------
 # Define the local reset button input
@@ -198,21 +187,23 @@ tiles[4] = [
 edge = neopixel.NeoPixel(board.A15, 20, auto_write=True)
 
 def changeBrightness():
-    global colorEntry, colorExit, colorMove
+    global colorEntry, colorExit, colorMove, colorError
     global colorPattern, colorMatch, colorHole
 
     if last_light_level == EarToHear.LIGHT_DAY:
         bright = 250
     elif last_light_level == EarToHear.LIGHT_DUSK_DAWN:
+        bright = 150
+    elif last_light_level == EarToHear.LIGHT_CIVIL_TWILIGHT:
         bright = 100
-    elif last_light_level == EarToHear.CIVIL_TWILIGHT:
+    elif last_light_level == EarToHear.LIGHT_NAUTICAL_TWILIGHT:
+        bright = 75
+    elif last_light_level == EarToHear.LIGHT_NIGHT:
         bright = 50
-    elif last_light_level == EarToHear.NAUTICAL_TWILIGHT:
-        bright = 40
-    elif last_light_level == EarToHear.NIGHT:
-        bright = 25
     else:
         bright = 25
+    print("bright", bright)
+
     if DEBUG:
         bright = 5
 
@@ -222,6 +213,7 @@ def changeBrightness():
     colorMatch = (bright, bright, bright)   # white (tile matches goal)
     colorMove = (bright, 0, 0)              # red
     colorHole = (bright, 0, bright)         # purple
+    colorError = (bright, 0, 0)             # red
 
 # ------------------------------------------------------------------
 # For the tile, set the LEDs to specifed pattern and indicated color
@@ -513,8 +505,7 @@ def blinkTile(tile, blinkPattern, color, reps, oldPattern, oldColor):
 def processMasterReset():
     if DEBUG:
         print("system_mode = MASTER RESET")
-
-    clearBoard
+    clearBoard()
     # +++++ display big red X
     ear.set_points_bits(0)
 
@@ -523,11 +514,11 @@ def processLocalReset():
         print("LOCAL RESET")
     ear.play_audio(
         random.randint(soundReset[0], soundReset[1]))
-    clearBoard
+    clearBoard()
     # ++++++++++ flash all white on & off
 
 def checkReset():
-    global current_system_mode
+    global last_system_mode, last_light_level
     localReset = False
     masterReset = False
 
@@ -536,8 +527,12 @@ def checkReset():
         processLocalReset()
 
     ear.check_i2c()
-    current_system_mode = ear.system_mode
-    masterReset = ear.system_mode == EarToHear.MODE_RESET
+    last_system_mode = ear.system_mode
+    last_light_level = ear.light_level
+
+    print(last_system_mode, last_light_level)
+
+    masterReset = last_system_mode == EarToHear.MODE_RESET
     if masterReset:
         processMasterReset()
 
@@ -581,8 +576,6 @@ matches = 0
 progress = 0.0
 reset = False
 press = False
-numLevelsDone = 0
-curLevel = 0
 
 # Define the matrix which tracks the positions of patterns on the board
 matrix = [[0 for r in range(5)] for c in range(5)]
@@ -599,6 +592,7 @@ matrix = [[0 for r in range(5)] for c in range(5)]
 
 while True:
 
+    reset = checkReset()
     numLevelsDone = 0
     levelsDone = [False, False, False, False, False, False, False, False]
 
@@ -613,11 +607,12 @@ while True:
         # - choose a game based on previous level and complexity slider
         # - assign the game to the work matrix
         # - shuffle the matrix depending on chaos slider
-        
+
+        changeBrightness()
         # set starting level from 0 to 7 based on Complexity slider
         diffSlider = difficulty.value / 65536
-        level = int(diffSlider * 8)            
-        
+        level = int(diffSlider * 8)
+
         if DEBUG:
             print("diff Slider", diffSlider)
             print("Initial level", level)
@@ -635,12 +630,6 @@ while True:
             print("Instanace", instance)
 
         clearBoard()
-        ear.check_i2c()
-
-        # Do nothing until reset is cleared
-        while ear.system_mode == EarToHear.MODE_RESET:
-            processMasterReset()
-            ear.check_i2c()
 
         # -------------------------------------------------------------------
         # copy the selected maze (goal) into the working matrix
@@ -664,12 +653,14 @@ while True:
             printPattern(goal[level][instance])
 
         localReset = False
+        errors = 0
+
         # ========================================================
         # Game play loop
         # ========================================================
         while True:
 
-            # Look for button presses. Also check for resets
+            reset = checkReset()
             time.sleep(0.2)
             press = False
             reset = False
@@ -698,9 +689,10 @@ while True:
             print("New:", newHoleRow, newHoleCol)
 
             if (rdist == 0) and (cdist == 0):
+                errors += 1
                 blinkTile(
                     tiles[oldHoleRow][oldHoleCol],
-                    crosshole,
+                    nocenter,
                     colorMove,
                     2,
                     currentPattern,
@@ -710,9 +702,10 @@ while True:
 
             elif (rdist != 0) and (cdist != 0):
                 # hole made impossible jump
+                errors += abs(rdist) + abs(cdist)
                 blinkTile(
                     tiles[newHoleRow][newHoleCol],
-                    crosshole,
+                    nocenter,
                     colorMove,
                     1,
                     currentPattern,
@@ -776,6 +769,6 @@ while True:
                 ear.play_audio(
                     random.randint(
                         soundProgress[0], soundProgress[1]))
-
+        ear.set_points_bits(2**level+1)
         levelsDone[level] = True
         numLevelsDone += 1
