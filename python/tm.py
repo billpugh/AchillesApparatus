@@ -10,12 +10,6 @@ from mazes import goal, goalBegin, goalEnd, \
     uplt, uprt, lolt, lort, vert, horz, blnk, hole
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # TO DO
-#   - Use time of day to set the light levels
-#       + LIGHT_NIGHT
-#       + LIGHT_NAUTICAL_TWILIGHT
-#       + LIGHT_CIVIL_TWILIGHT
-#       + LIGHT_DUSK_DAWN
-#       + LIGHT_DAY
 #   - Do something different with:
 #       + QUIET (play random noises)
 #       + ACTIVE (game play)
@@ -526,11 +520,13 @@ def checkReset():
     if localReset:
         processLocalReset()
 
-    ear.check_i2c()
+    # ear.check_i2c()
+    i2c_status, i2c_info = ear.check_i2c()
+    i2c_status, i2c_info = ear.check_i2c()
     last_system_mode = ear.system_mode
     last_light_level = ear.light_level
 
-    print(last_system_mode, last_light_level)
+    # print(last_system_mode, last_light_level)
 
     masterReset = last_system_mode == EarToHear.MODE_RESET
     if masterReset:
@@ -576,6 +572,7 @@ matches = 0
 progress = 0.0
 reset = False
 press = False
+levelBits = [0, 1, 2, 4, 8, 16, 32, 64, 128]
 
 # Define the matrix which tracks the positions of patterns on the board
 matrix = [[0 for r in range(5)] for c in range(5)]
@@ -593,6 +590,8 @@ matrix = [[0 for r in range(5)] for c in range(5)]
 while True:
 
     reset = checkReset()
+    ear.set_points_bits(0)
+    allBits = 0
     numLevelsDone = 0
     levelsDone = [False, False, False, False, False, False, False, False]
 
@@ -745,7 +744,12 @@ while True:
                     random.randint(
                         soundSuccess[0], soundSuccess[1]))
                 playSuccessLights(matrix)
-                ear.set_points(level)
+                allBits += levelBits[level]
+                ear.set_points_bits(allBits)
+                if DEBUG:
+                    print("allBits", allBits)
+                levelsDone[level] = True
+                numLevelsDone += 1
                 break
 
             elif progress > 0.9:
@@ -769,6 +773,3 @@ while True:
                 ear.play_audio(
                     random.randint(
                         soundProgress[0], soundProgress[1]))
-        ear.set_points_bits(2**level+1)
-        levelsDone[level] = True
-        numLevelsDone += 1
