@@ -3,6 +3,8 @@
 #include "leds.h"
 #include "AchillesLog.h"
 
+#include "AchillesWedge.h"
+
 void setup() {
 
  
@@ -12,6 +14,7 @@ void setup() {
   setupLEDs();
    pinMode(5, OUTPUT);
   delay(1000);
+   setupComm(0x74);
 
 }
 

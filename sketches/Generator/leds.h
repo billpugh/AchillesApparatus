@@ -1,6 +1,8 @@
 
 void setupLEDs();
-void setMeter(int voltage);
-void showErr();
+void setDigitalMeter(int voltage);
+void updateDisplays();
+bool isRebooting();
+
 
 uint16_t getMeterColor();

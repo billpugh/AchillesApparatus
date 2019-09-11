@@ -9,7 +9,7 @@ float halfLife = 1;
 
 class Gen {
   public:
-    const int id;
+    int id;
     bool on = false;
     bool buttonPressed = false;
     bool enabled();
@@ -23,4 +23,11 @@ class Gen {
     int currentVoltageTarget();
     void changeState();
     int currentVoltageContribution();
+    void init(int id);
 };
+
+extern Gen [] gen;
+
+void setupGenerators();
+void updateGenerators();
+extern int currentVoltage;
