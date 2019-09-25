@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <Adafruit_NeoPixel.h>
+
 #include <RGBDigit.h>
 #include "math.h"
 #include "leds.h"
@@ -121,7 +121,7 @@ void setDigitalMeter(int voltage) {
   int v = voltage;
   int place = 1000;
   bool sawNonzero = false;
-  aalogf("RGB: %4d %4d %4d %4d %4d\n", voltage, rawR * 10, r * 10, g * 10, b * 10);
+  if (false) aalogf("RGB: %4d %4d %4d %4d %4d\n", voltage, rawR * 10, r * 10, g * 10, b * 10);
   for (int digit = 0; digit <= 3; digit++) {
     int thisPosition = v / place;
     v = v - thisPosition * place;

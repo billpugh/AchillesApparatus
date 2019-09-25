@@ -57,8 +57,19 @@ int rebootState = 0;
 
 
 void setupGenerators() {
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < 10; i++) {
     gen[i].init(i);
+    int pos = ledPos[i];
+    if (pos >= 0) {
+      buttons.setPixelColor(pos,  0x800000 );
+      buttons.show();
+      delay(200);
+      buttons.setPixelColor(pos,  0 );
+      buttons.show();
+    }
+  }
+
+
 }
 
 
@@ -135,6 +146,11 @@ void Gen:: changeState() {
   stable = false;
   stateLastChanged = millis();
   on = !on;
+  int pos = ledPos[id];
+  if (pos >= 0) {
+    buttons.setPixelColor(pos,  on ? 0x800000 : 0 );
+    buttons.show();
+  }
 
 }
 int Gen:: currentVoltageContribution() {
