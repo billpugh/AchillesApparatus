@@ -1,7 +1,8 @@
 #include <Arduino.h>
-#include <Adafruit_NeoPixel_ZeroDMA.h>
-#include <RGBDigitZero.h>
+#include <Adafruit_NeoPixel.h>
+#include <RGBDigit.h>
 #include "math.h"
+#include "leds.h"
 
 #include "AchillesLog.h"
 const uint8_t PROGMEM gamma8[] = {
@@ -24,10 +25,11 @@ const uint8_t PROGMEM gamma8[] = {
 };
 
 
-RGBDigit digits(4, 6);
+const int digits_pin = 5;
+RGBDigit digits(4, digits_pin);
 
 
-Adafruit_NeoPixel buttons(NUMPIXELS, A5, NEO_RGB + NEO_KHZ800);
+Adafruit_NeoPixel buttons(11, A5, NEO_RGB + NEO_KHZ800);
 
 
 uint16_t meterColor = 0x808080;
@@ -38,11 +40,18 @@ void setupLEDs() {
   buttons.show();
   digits.begin();
   digits.clearAll();
+  digits.setDigit(2, 0, 200, 0, 0);
+  digits.setDigit(3, 1, 200, 0, 0);
+  digits.setDigit(4, 2, 200, 0, 0);
+  digits.setDigit(5, 3, 200, 0, 0);
+  digits.show();
+  delay(500);
 }
 
 void updateDisplays() {
-  if (isRebooting()) showErr();
-  
+  if (isRebooting())
+    showErr();
+
 }
 
 uint8_t translateColorForMeterBacklight(int c) {
@@ -150,12 +159,13 @@ void showText(const char * text, int msDelay, int r, int g, int b) {
 
 
 unsigned long nextErrorStateAt = 0;
+unsigned long errorStart = 0;
 int errorState;
-
 
 bool isRebooting() {
   return errorState != 0;
 }
+
 void startError() {
   errorStart = millis();
   errorState = 1;
@@ -206,7 +216,7 @@ void showErr() {
       digits.clearAll();
       int b = myGamma(200);
       for (int i = 0; i < dotsToShow; i++)
-        digits.showDot(k, b, b, b);
+        digits.showDot(i, b, b, b);
       nextErrorStateAt = now + 300;
       break;
   }

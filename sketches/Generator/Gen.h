@@ -1,11 +1,7 @@
 
 
-
-int bonusVoltage = 175;
-float halfLife = 1;
-
-
-
+void setupGenerators();
+void updateGenerators();
 
 class Gen {
   public:
@@ -15,19 +11,18 @@ class Gen {
     bool enabled();
     uint8_t brightness();
     unsigned long stateLastChanged;
-    unsigned long voltageWhenLastChanged;
-    int operatingVoltage;
-    bool stable;
+    unsigned long lastChange = 0;
+    int voltageWhenLastChanged = 0;
+   
+    bool stable = true;
 
+    int operatingVoltage();
+    int bonusVoltage() {
+       return 175;
+    }
+    void init(int id);
     void update();
     int currentVoltageTarget();
     void changeState();
     int currentVoltageContribution();
-    void init(int id);
 };
-
-extern Gen [] gen;
-
-void setupGenerators();
-void updateGenerators();
-extern int currentVoltage;
